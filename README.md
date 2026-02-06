@@ -1,6 +1,6 @@
 # fiber-link-sim
 
-_A A modular, reproducible physics-based simulator for fiber-optic communication links_
+A modular, reproducible physics-based simulator for fiber-optic communication links_
 
 ## Installation
 
