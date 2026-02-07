@@ -14,8 +14,16 @@ EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
 @pytest.mark.integration
 @pytest.mark.opticommpy
 @pytest.mark.slow
-def test_simulation_determinism() -> None:
-    spec = json.loads((EXAMPLE_DIR / "qpsk_longhaul_manakov.json").read_text())
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "qpsk_longhaul_manakov.json",
+        "qpsk_longhaul_1span.json",
+        "qpsk_longhaul_multispan.json",
+    ],
+)
+def test_simulation_determinism(filename: str) -> None:
+    spec = json.loads((EXAMPLE_DIR / filename).read_text())
     result_a = simulate(spec)
     result_b = simulate(spec)
     assert result_a.status == "success"
