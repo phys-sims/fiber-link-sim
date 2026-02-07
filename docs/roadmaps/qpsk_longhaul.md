@@ -124,6 +124,25 @@ This roadmap captures the **required capabilities** for coherent QPSK long-haul 
 - **Metrics:** required fields must be finite and within valid ranges (e.g., BER in [0,1]).
 - **Determinism:** same seed/spec → identical summary metrics (within tolerance).
 
+## Artifacts & Visualization Outputs
+
+Artifacts are controlled by the output flags (`outputs.artifact_level`, `outputs.return_waveforms`) and should follow the
+State/large arrays policy: **large arrays are stored as refs** (file paths, artifact keys, blob handles) under State
+`refs`, while inline values are reserved for **small, scalar summaries**. Inline payloads should be avoided for heavy
+waveforms or dense per-sample traces unless explicitly requested by `outputs.return_waveforms`.
+
+**Artifact list (and stage ownership)**
+
+- **Constellation** — produced in **DSPStage** (post-equalization / post-CPR), recorded in **MetricsStage**.
+- **Eye diagram** — produced in **RxFrontEndStage** (sampled electrical waveform) or **DSPStage** (post-matched-filter),
+  recorded in **MetricsStage**.
+- **PSD / spectrum** — produced in **TxStage** (launch spectrum) and **ChannelStage** (after spans), recorded in
+  **MetricsStage**.
+- **OSNR-vs-span** — produced in **ChannelStage** (span-by-span metrics), recorded in **MetricsStage**.
+- **EVM-vs-distance** — produced in **DSPStage** (per-span or per-segment EVM snapshots), recorded in **MetricsStage**.
+- **Phase error trace** — produced in **DSPStage** (CPR residuals), recorded in **MetricsStage**.
+- **BER waterfall** — produced in **MetricsStage** (aggregate across runs or sweeps), recorded in **MetricsStage**.
+
 ## Coverage alignment with existing docs
 
 ### Documented pipeline vs schema mapping
