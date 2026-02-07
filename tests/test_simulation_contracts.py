@@ -1,20 +1,21 @@
 from __future__ import annotations
 
+import importlib
 import json
 import time
 from pathlib import Path
 from typing import Any, cast
 
-import importlib
 import numpy as np
 import pytest
 
-simulate_module = importlib.import_module("fiber_link_sim.simulate")
 from fiber_link_sim.adapters.opticommpy.stages import ADAPTERS
 from fiber_link_sim.adapters.opticommpy.types import TxOutput
 from fiber_link_sim.data_models.spec_models import SimulationResult, SimulationSpec
 from fiber_link_sim.simulate import simulate
 from fiber_link_sim.utils import compute_spec_hash
+
+simulate_module = importlib.import_module("fiber_link_sim.simulate")
 
 EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
 

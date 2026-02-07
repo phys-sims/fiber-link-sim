@@ -33,3 +33,8 @@ class FECStageConfig(StageConfig):
 class MetricsStageConfig(StageConfig):
     name: str = "metrics"
     spec: SimulationSpec
+
+
+class ArtifactsStageConfig(StageConfig):
+    name: str = "artifacts"
+    spec: SimulationSpec
