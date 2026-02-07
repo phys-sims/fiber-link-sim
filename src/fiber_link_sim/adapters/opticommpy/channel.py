@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import math
-
 from optic.comm import metrics as opti_metrics  # type: ignore[import-untyped]
 from optic.models import channels  # type: ignore[import-untyped]
 
+from fiber_link_sim.adapters.opticommpy import units
 from fiber_link_sim.adapters.opticommpy.param_builders import build_channel_params
 from fiber_link_sim.adapters.opticommpy.types import ChannelOutput
 from fiber_link_sim.data_models.spec_models import SimulationSpec
@@ -28,7 +27,7 @@ def run_channel(spec: SimulationSpec, signal: object, seed: int) -> ChannelOutpu
     if spec.spans.amplifier.type == "edfa":
         osnr_lin = opti_metrics.calcLinOSNR(
             layout.n_spans,
-            10 ** (spec.transceiver.tx.launch_power_dbm / 10) * 1e-3,
+            units.dbm_to_watts(spec.transceiver.tx.launch_power_dbm),
             spec.fiber.alpha_db_per_km,
             layout.span_length_km,
             40.0,
@@ -36,7 +35,7 @@ def run_channel(spec: SimulationSpec, signal: object, seed: int) -> ChannelOutpu
             Fc=param.Fc,
         )
         osnr_value = float(getattr(osnr_lin, "mean", lambda: osnr_lin)())
-        osnr_db = 10.0 * math.log10(osnr_value)
+        osnr_db = units.linear_to_db(osnr_value)
 
     return ChannelOutput(
         signal=signal_out,

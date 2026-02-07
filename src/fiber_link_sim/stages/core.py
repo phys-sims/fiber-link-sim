@@ -3,8 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import log10
 
-from fiber_link_sim.adapters.opticommpy import compute_metrics, run_channel, run_rx_frontend, run_tx
-from fiber_link_sim.adapters.opticommpy.dsp import run_dsp_chain
+from fiber_link_sim.adapters.opticommpy import ADAPTERS
 from fiber_link_sim.stages.base import SimulationState, Stage, StageResult
 from fiber_link_sim.stages.configs import (
     ChannelStageConfig,
@@ -25,7 +24,7 @@ class TxStage(Stage):
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
         spec = self.cfg.spec
         rng = derive_rng(spec.runtime.seed, self.name)
-        tx_out = run_tx(spec, int(rng.integers(0, 2**31 - 1)))
+        tx_out = ADAPTERS.tx.run(spec, int(rng.integers(0, 2**31 - 1)))
 
         total_bits = int(spec.runtime.n_symbols * bits_per_symbol(spec.signal))
         state.tx.update(
@@ -55,7 +54,7 @@ class ChannelStage(Stage):
         signal = state.tx.get("waveform")
         if signal is None:
             raise ValueError("missing tx waveform for channel stage")
-        channel_out = run_channel(spec, signal, int(rng.integers(0, 2**31 - 1)))
+        channel_out = ADAPTERS.channel.run(spec, signal, int(rng.integers(0, 2**31 - 1)))
 
         total_length_m = total_link_length_m(spec.path)
         state.optical.update(
@@ -80,7 +79,7 @@ class RxFrontEndStage(Stage):
         signal = state.optical.get("waveform")
         if signal is None:
             raise ValueError("missing optical waveform for rx frontend")
-        rx_out = run_rx_frontend(spec, signal, int(rng.integers(0, 2**31 - 1)))
+        rx_out = ADAPTERS.rx_frontend.run(spec, signal, int(rng.integers(0, 2**31 - 1)))
         state.rx.update({"samples": rx_out.samples, "frontend": rx_out.params})
         return StageResult(state=state)
 
@@ -95,7 +94,7 @@ class DSPStage(Stage):
         samples = state.rx.get("samples")
         if samples is None:
             raise ValueError("missing rx samples for DSP stage")
-        dsp_out = run_dsp_chain(spec, samples, spec.processing.dsp_chain)
+        dsp_out = ADAPTERS.dsp.run(spec, samples, spec.processing.dsp_chain)
         state.rx["symbols"] = dsp_out.symbols
         state.stats["dsp"] = dsp_out.params
         return StageResult(state=state)
@@ -113,7 +112,7 @@ class FECStage(Stage):
             symb_tx = state.tx.get("symbols")
             if symb_rx is None or symb_tx is None:
                 raise ValueError("missing symbols for FEC stage")
-            metrics = compute_metrics(symb_rx, symb_tx, spec.signal)
+            metrics = ADAPTERS.metrics.compute(symb_rx, symb_tx, spec)
             state.stats.update(
                 {
                     "pre_fec_ber": metrics.pre_fec_ber,
@@ -122,16 +121,11 @@ class FECStage(Stage):
                 }
             )
         pre_fec_ber = float(state.stats.get("pre_fec_ber", 0.0))
-        if spec.processing.fec.enabled:
-            code_rate = spec.processing.fec.code_rate
-            post_fec_ber = max(pre_fec_ber * (1.0 - code_rate) * 0.2, 1e-12)
-        else:
-            post_fec_ber = pre_fec_ber
-        fer = min(1.0, post_fec_ber * 10.0)
+        fec_out = ADAPTERS.fec.run(spec, pre_fec_ber)
         state.stats.update(
             {
-                "post_fec_ber": post_fec_ber,
-                "fer": fer,
+                "post_fec_ber": fec_out.post_fec_ber,
+                "fer": fec_out.fer,
             }
         )
         if spec.processing.fec.enabled:
@@ -153,7 +147,7 @@ class MetricsStage(Stage):
             symb_tx = state.tx.get("symbols")
             if symb_rx is None or symb_tx is None:
                 raise ValueError("missing symbols for metrics stage")
-            metrics = compute_metrics(symb_rx, symb_tx, spec.signal)
+            metrics = ADAPTERS.metrics.compute(symb_rx, symb_tx, spec)
             state.stats.update(
                 {
                     "pre_fec_ber": metrics.pre_fec_ber,

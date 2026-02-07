@@ -32,3 +32,9 @@ class RxOutput:
 class DspOutput:
     symbols: np.ndarray
     params: dict[str, Any]
+
+
+@dataclass(slots=True)
+class FecOutput:
+    post_fec_ber: float
+    fer: float
