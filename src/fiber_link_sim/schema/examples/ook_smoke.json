@@ -1,5 +1,5 @@
 {
-  "v": "0.1",
+  "v": "0.2",
   "scenario": {
     "name": "OOK smoke test",
     "tags": [
@@ -116,6 +116,11 @@
       "dz_m": 200,
       "step_adapt": false
     }
+  },
+  "latency_model": {
+    "serialization_weight": 1.0,
+    "processing_weight": 0.1,
+    "processing_floor_s": 1e-06
   },
   "runtime": {
     "seed": 1,

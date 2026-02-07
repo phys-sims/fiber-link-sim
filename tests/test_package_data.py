@@ -11,4 +11,4 @@ def test_schema_example_files_are_packaged() -> None:
     assert example_path.is_file()
     payload = json.loads(example_path.read_text())
 
-    assert payload["v"] == "0.1"
+    assert payload["v"] == "0.2"

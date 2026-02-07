@@ -3,7 +3,7 @@
 This roadmap captures the **required capabilities** for coherent QPSK long-haul simulations, mapped to the current
 `SimulationSpec` schema, along with acceptance criteria per stage. It is intended to align the pipeline described in
 [physics_context](../refs/physics_context.md) and [phys_pipeline_usage](../refs/phys_pipeline_usage.md) with the schema contract in
-`src/fiber_link_sim/schema/simulation_spec.schema.v0.1.json`.
+`src/fiber_link_sim/schema/simulation_spec.schema.v0.2.json`.
 
 ## Reference Baselines
 
@@ -33,7 +33,7 @@ baseline implementation decisions.
 ## Stage-by-stage capability map
 
 > **Legend:** Schema paths use dotted notation (e.g., `signal.format`). All schema references are in
-> `src/fiber_link_sim/schema/simulation_spec.schema.v0.1.json`.
+> `src/fiber_link_sim/schema/simulation_spec.schema.v0.2.json`.
 
 ### TxStage (bits → symbols → shaped waveform)
 
@@ -146,6 +146,7 @@ baseline implementation decisions.
 | Capability | Spec fields | Notes |
 | --- | --- | --- |
 | Run-time bounds | `runtime.max_runtime_s` | Used to enforce simulation runtime policy. |
+| Latency model configuration | `latency_model.serialization_weight`, `latency_model.processing_weight`, `latency_model.processing_floor_s` | Controls latency breakdown scaling and minimum processing cost. |
 | Deterministic metrics | `runtime.seed` | Metrics should be reproducible with fixed seed. |
 
 **Acceptance criteria**
