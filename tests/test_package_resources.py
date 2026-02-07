@@ -17,10 +17,7 @@ def test_schema_resources_available() -> None:
 
 def test_example_resources_available() -> None:
     example_path = (
-        resources.files("fiber_link_sim")
-        / "schema"
-        / "examples"
-        / "qpsk_longhaul_1span.json"
+        resources.files("fiber_link_sim") / "schema" / "examples" / "qpsk_longhaul_1span.json"
     )
     assert example_path.is_file()
     json.loads(example_path.read_text())
