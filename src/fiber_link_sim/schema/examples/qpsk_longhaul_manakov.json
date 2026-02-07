@@ -149,7 +149,7 @@
     "seed": 1234,
     "n_symbols": 8192,
     "samples_per_symbol": 4,
-    "max_runtime_s": 60
+    "max_runtime_s": 120
   },
   "outputs": {
     "artifact_level": "basic",

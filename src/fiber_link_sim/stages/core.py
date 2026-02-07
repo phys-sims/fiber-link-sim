@@ -98,6 +98,8 @@ class DSPStage(Stage):
         samples = state.rx.get("samples")
         if samples is None:
             raise ValueError("missing rx samples for DSP stage")
+        rng = state.stage_rng(self.name)
+        np.random.seed(int(rng.integers(0, 2**31 - 1)))
         dsp_out = ADAPTERS.dsp.run(spec, samples, spec.processing.dsp_chain)
         state.rx["symbols"] = dsp_out.symbols
         state.stats["dsp"] = dsp_out.params
