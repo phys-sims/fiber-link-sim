@@ -14,7 +14,7 @@ from fiber_link_sim.adapters.opticommpy.param_builders import (
     build_resample_params,
 )
 from fiber_link_sim.adapters.opticommpy.types import DspOutput
-from fiber_link_sim.data_models.spec_models import DspBlock, SimulationSpec
+from fiber_link_sim.data_models.spec_models import DSPBlockName, DspBlock, SimulationSpec
 
 _DSP_BLOCKS = {
     "resample",
@@ -26,11 +26,64 @@ _DSP_BLOCKS = {
     "demap",
 }
 
+_DEFAULT_COHERENT_CHAIN: tuple[DSPBlockName, ...] = (
+    "resample",
+    "matched_filter",
+    "cd_comp",
+    "mimo_eq",
+    "cpr",
+    "demap",
+)
+_DEFAULT_IMDD_CHAIN: tuple[DSPBlockName, ...] = ("resample", "matched_filter", "ffe", "demap")
+
+
+def resolve_dsp_chain(spec: SimulationSpec, blocks: list[DspBlock]) -> list[DspBlock]:
+    if blocks:
+        chain = list(blocks)
+    else:
+        if spec.signal.format == "coherent_qpsk":
+            chain = [DspBlock(name=name) for name in _DEFAULT_COHERENT_CHAIN]
+        else:
+            chain = [DspBlock(name=name) for name in _DEFAULT_IMDD_CHAIN]
+    validate_dsp_chain(chain)
+    return chain
+
+
+def validate_dsp_chain(blocks: list[DspBlock]) -> None:
+    for block in blocks:
+        if not block.enabled:
+            continue
+        name = block.name
+        params = block.params
+        if name not in _DSP_BLOCKS:
+            continue
+        if name == "resample" and "out_fs_hz" in params:
+            out_fs = float(params["out_fs_hz"])
+            if out_fs <= 0:
+                raise ValueError("resample.out_fs_hz must be > 0")
+        if name in {"mimo_eq", "ffe"}:
+            taps = int(params.get("taps", 1))
+            mu = float(params.get("mu", 1e-3))
+            if taps < 1:
+                raise ValueError(f"{name}.taps must be >= 1")
+            if mu <= 0:
+                raise ValueError(f"{name}.mu must be > 0")
+        if name == "cpr":
+            n_avg = int(params.get("avg_window", 1))
+            test_angles = int(params.get("test_angles", 1))
+            if n_avg < 1:
+                raise ValueError("cpr.avg_window must be >= 1")
+            if test_angles < 1:
+                raise ValueError("cpr.test_angles must be >= 1")
+        if name == "demap" and "soft" in params and not isinstance(params["soft"], bool):
+            raise ValueError("demap.soft must be a boolean when provided")
+
 
 def run_dsp_chain(spec: SimulationSpec, samples: np.ndarray, blocks: list[DspBlock]) -> DspOutput:
     params: dict[str, Any] = {}
     out = samples
     fs = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol
+    blocks = resolve_dsp_chain(spec, blocks)
 
     for block in blocks:
         if not block.enabled:
