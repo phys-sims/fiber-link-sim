@@ -43,7 +43,9 @@ def test_artifacts_absent_when_level_none(monkeypatch: pytest.MonkeyPatch, tmp_p
     assert state.artifacts == []
 
 
-def test_waveform_refs_present_when_requested(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_waveform_refs_present_when_requested(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.chdir(tmp_path)
     spec_data = _load_example("ook_smoke.json")
     spec_data["outputs"]["artifact_level"] = "basic"
