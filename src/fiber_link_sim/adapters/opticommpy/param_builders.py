@@ -39,7 +39,9 @@ def _beta2_to_dispersion(beta2_s2_per_m: float, fc_hz: float) -> float:
     return dispersion_s_per_m2 * 1e6
 
 
-def build_tx_params(spec: SimulationSpec, seed: int, format_tag: Literal["coherent", "pam"]) -> parameters:
+def build_tx_params(
+    spec: SimulationSpec, seed: int, format_tag: Literal["coherent", "pam"]
+) -> parameters:
     param = parameters()
     param.seed = seed
     param.Rs = spec.signal.symbol_rate_baud
@@ -48,7 +50,12 @@ def build_tx_params(spec: SimulationSpec, seed: int, format_tag: Literal["cohere
     param.nPolModes = spec.signal.n_pol
     param.prgsBar = False
 
-    bits_per_symbol_val = int(np.log2(4 if format_tag == "coherent" else (2 if spec.signal.format == "imdd_ook" else 4)))
+    if format_tag == "coherent":
+        bits_per_symbol_val = int(np.log2(4))
+    elif spec.signal.format == "imdd_ook":
+        bits_per_symbol_val = int(np.log2(2))
+    else:
+        bits_per_symbol_val = int(np.log2(4))
     param.nBits = int(spec.runtime.n_symbols * bits_per_symbol_val)
 
     if format_tag == "coherent":

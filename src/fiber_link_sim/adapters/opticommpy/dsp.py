@@ -5,7 +5,8 @@ from typing import Any
 
 import numpy as np
 from optic.comm import modulation  # type: ignore[import-untyped]
-from optic.dsp import carrierRecovery, core as dsp_core, equalization  # type: ignore[import-untyped]
+from optic.dsp import carrierRecovery, equalization  # type: ignore[import-untyped]
+from optic.dsp import core as dsp_core
 
 from fiber_link_sim.adapters.opticommpy.param_builders import (
     build_edc_params,
@@ -14,7 +15,6 @@ from fiber_link_sim.adapters.opticommpy.param_builders import (
 )
 from fiber_link_sim.adapters.opticommpy.types import DspOutput
 from fiber_link_sim.data_models.spec_models import DspBlock, SimulationSpec
-
 
 _DSP_BLOCKS = {
     "resample",
@@ -27,9 +27,7 @@ _DSP_BLOCKS = {
 }
 
 
-def run_dsp_chain(
-    spec: SimulationSpec, samples: np.ndarray, blocks: list[DspBlock]
-) -> DspOutput:
+def run_dsp_chain(spec: SimulationSpec, samples: np.ndarray, blocks: list[DspBlock]) -> DspOutput:
     params: dict[str, Any] = {}
     out = samples
     fs = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol
