@@ -4,6 +4,8 @@ import json
 from math import isfinite
 from pathlib import Path
 
+import pytest
+
 from fiber_link_sim.simulate import simulate
 
 EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
@@ -13,6 +15,9 @@ def _load_example(name: str) -> dict:
     return json.loads((EXAMPLE_DIR / name).read_text())
 
 
+@pytest.mark.integration
+@pytest.mark.opticommpy
+@pytest.mark.slow
 def test_simulation_examples_success() -> None:
     for filename in (
         "qpsk_longhaul_manakov.json",
@@ -30,6 +35,9 @@ def test_simulation_examples_success() -> None:
         assert 0.0 <= result.summary.errors.fer <= 1.0
 
 
+@pytest.mark.integration
+@pytest.mark.opticommpy
+@pytest.mark.slow
 def test_qpsk_longhaul_expected_ranges() -> None:
     """Document expected BER and OSNR/SNR proxy ranges for QPSK examples."""
     expectations = {

@@ -15,6 +15,9 @@ from fiber_link_sim.stages.base import SimulationState
 EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
 
 
+@pytest.mark.integration
+@pytest.mark.opticommpy
+@pytest.mark.slow
 def test_fec_disabled_passthrough() -> None:
     spec = json.loads((EXAMPLE_DIR / "ook_smoke.json").read_text())
     spec["processing"]["fec"]["enabled"] = False

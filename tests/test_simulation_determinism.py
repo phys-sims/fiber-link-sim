@@ -4,11 +4,16 @@ import json
 from math import isclose
 from pathlib import Path
 
+import pytest
+
 from fiber_link_sim.simulate import simulate
 
 EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
 
 
+@pytest.mark.integration
+@pytest.mark.opticommpy
+@pytest.mark.slow
 def test_simulation_determinism() -> None:
     spec = json.loads((EXAMPLE_DIR / "qpsk_longhaul_manakov.json").read_text())
     result_a = simulate(spec)

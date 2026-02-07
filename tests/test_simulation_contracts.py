@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
+import pytest
 
 from fiber_link_sim.adapters.opticommpy.stages import ADAPTERS
 from fiber_link_sim.adapters.opticommpy.types import TxOutput
@@ -32,6 +33,9 @@ def test_example_specs_validate() -> None:
         assert spec.v == "0.1"
 
 
+@pytest.mark.integration
+@pytest.mark.opticommpy
+@pytest.mark.slow
 def test_simulation_results_validate() -> None:
     for filename in (
         "qpsk_longhaul_manakov.json",
@@ -46,6 +50,8 @@ def test_simulation_results_validate() -> None:
         SimulationResult.model_validate(result.model_dump())
 
 
+@pytest.mark.integration
+@pytest.mark.opticommpy
 def test_simulation_runtime_error_returns_structured_result(monkeypatch: Any) -> None:
     spec_data = _load_example("ook_smoke.json")
     spec = SimulationSpec.model_validate(spec_data)

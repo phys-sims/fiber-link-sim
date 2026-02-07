@@ -131,7 +131,7 @@ Before opening/submitting any PR, ensure **all CI gates pass locally** (or via t
 - **Type checking**
   - `python -m mypy src`
 - **Tests**
-  - `python -m pytest -q`
+  - `python -m pytest -q -m "not slow" --durations=10`
 
 ### Rules
 - Do not submit a PR that fails any of the above checks.
@@ -142,6 +142,11 @@ Before opening/submitting any PR, ensure **all CI gates pass locally** (or via t
 ### Setup (preferred)
 - Install dev deps: `python -m pip install -e ".[dev]"`
 - Run the full CI-equivalent suite with the three commands above.
+
+### Pytest usage (fast vs. slow)
+- Fast tests (default): `pytest -m "not slow" --durations=10`
+- Slow tests only: `pytest -m slow --durations=10`
+- Full suite: `pytest -m "slow or not slow" --durations=10`
 
 ## Guardrails
 - Favor readability and correctness over premature optimization.

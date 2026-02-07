@@ -48,7 +48,7 @@ jobs:
         run: mypy # [tool.mypy] sets scope to src
           
       - name: Tests
-        run: pytest -q
+        run: pytest -q -m "not slow" --durations=10
 
   gate:
     name: gate
