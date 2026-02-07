@@ -1,0 +1,130 @@
+{
+  "v": "0.1",
+  "scenario": {
+    "name": "OOK smoke test",
+    "tags": [
+      "imdd",
+      "ook",
+      "smoke"
+    ]
+  },
+  "path": {
+    "segments": [
+      {
+        "length_m": 2000,
+        "temp_c": 25
+      }
+    ],
+    "geo": {
+      "enabled": false,
+      "polyline_wgs84": []
+    }
+  },
+  "fiber": {
+    "alpha_db_per_km": 0.2,
+    "beta2_s2_per_m": -2.17e-26,
+    "beta3_s3_per_m": 0.0,
+    "gamma_w_inv_m": 0.0,
+    "pmd_ps_sqrt_km": 0.0,
+    "n_group": 1.4682
+  },
+  "spans": {
+    "mode": "fixed_span_length",
+    "span_length_m": 2000,
+    "amplifier": {
+      "type": "none",
+      "mode": "none"
+    }
+  },
+  "signal": {
+    "format": "imdd_ook",
+    "symbol_rate_baud": 25000000000,
+    "rolloff": 0.2,
+    "n_pol": 1,
+    "frame": {
+      "payload_bits": 4096,
+      "preamble_bits": 128,
+      "pilot_bits": 0
+    }
+  },
+  "transceiver": {
+    "tx": {
+      "laser_linewidth_hz": 0,
+      "launch_power_dbm": 0.0
+    },
+    "rx": {
+      "coherent": false,
+      "lo_linewidth_hz": 0,
+      "adc": {
+        "sample_rate_hz": 100000000000,
+        "bits": 8
+      },
+      "noise": {
+        "thermal": true,
+        "shot": true
+      }
+    }
+  },
+  "processing": {
+    "dsp_chain": [
+      {
+        "name": "resample",
+        "enabled": true,
+        "params": {}
+      },
+      {
+        "name": "matched_filter",
+        "enabled": true,
+        "params": {
+          "type": "rrc"
+        }
+      },
+      {
+        "name": "ffe",
+        "enabled": true,
+        "params": {
+          "taps": 11,
+          "mu": 0.001
+        }
+      },
+      {
+        "name": "demap",
+        "enabled": true,
+        "params": {
+          "soft": false
+        }
+      }
+    ],
+    "fec": {
+      "enabled": false,
+      "scheme": "none",
+      "code_rate": 1.0,
+      "params": {}
+    }
+  },
+  "propagation": {
+    "model": "scalar_glnse",
+    "backend": "builtin_ssfm",
+    "effects": {
+      "dispersion": true,
+      "nonlinearity": false,
+      "ase": false,
+      "pmd": false,
+      "env_effects": false
+    },
+    "ssfm": {
+      "dz_m": 200,
+      "step_adapt": false
+    }
+  },
+  "runtime": {
+    "seed": 1,
+    "n_symbols": 4096,
+    "samples_per_symbol": 4,
+    "max_runtime_s": 10
+  },
+  "outputs": {
+    "artifact_level": "none",
+    "return_waveforms": false
+  }
+}

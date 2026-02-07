@@ -1,0 +1,132 @@
+{
+  "v": "0.1",
+  "scenario": {
+    "name": "PAM4 short-haul baseline",
+    "tags": [
+      "imdd",
+      "pam4",
+      "datacenter"
+    ]
+  },
+  "path": {
+    "segments": [
+      {
+        "length_m": 2000,
+        "temp_c": 25
+      }
+    ],
+    "geo": {
+      "enabled": false,
+      "polyline_wgs84": []
+    }
+  },
+  "fiber": {
+    "alpha_db_per_km": 0.2,
+    "beta2_s2_per_m": -2.17e-26,
+    "beta3_s3_per_m": 0.0,
+    "gamma_w_inv_m": 0.0,
+    "pmd_ps_sqrt_km": 0.0,
+    "n_group": 1.4682
+  },
+  "spans": {
+    "mode": "fixed_span_length",
+    "span_length_m": 2000,
+    "amplifier": {
+      "type": "none",
+      "mode": "none"
+    }
+  },
+  "signal": {
+    "format": "imdd_pam4",
+    "symbol_rate_baud": 53000000000,
+    "rolloff": 0.15,
+    "n_pol": 1,
+    "frame": {
+      "payload_bits": 12000,
+      "preamble_bits": 256,
+      "pilot_bits": 0
+    }
+  },
+  "transceiver": {
+    "tx": {
+      "laser_linewidth_hz": 0,
+      "launch_power_dbm": 0.0
+    },
+    "rx": {
+      "coherent": false,
+      "lo_linewidth_hz": 0,
+      "adc": {
+        "sample_rate_hz": 212000000000,
+        "bits": 8
+      },
+      "noise": {
+        "thermal": true,
+        "shot": true
+      }
+    }
+  },
+  "processing": {
+    "dsp_chain": [
+      {
+        "name": "resample",
+        "enabled": true,
+        "params": {}
+      },
+      {
+        "name": "matched_filter",
+        "enabled": true,
+        "params": {
+          "type": "rrc"
+        }
+      },
+      {
+        "name": "ffe",
+        "enabled": true,
+        "params": {
+          "taps": 31,
+          "mu": 0.0005
+        }
+      },
+      {
+        "name": "demap",
+        "enabled": true,
+        "params": {
+          "soft": true
+        }
+      }
+    ],
+    "fec": {
+      "enabled": true,
+      "scheme": "ldpc",
+      "code_rate": 0.9,
+      "params": {
+        "max_iters": 15
+      }
+    }
+  },
+  "propagation": {
+    "model": "scalar_glnse",
+    "backend": "builtin_ssfm",
+    "effects": {
+      "dispersion": true,
+      "nonlinearity": false,
+      "ase": false,
+      "pmd": false,
+      "env_effects": false
+    },
+    "ssfm": {
+      "dz_m": 200,
+      "step_adapt": false
+    }
+  },
+  "runtime": {
+    "seed": 42,
+    "n_symbols": 50000,
+    "samples_per_symbol": 4,
+    "max_runtime_s": 30
+  },
+  "outputs": {
+    "artifact_level": "basic",
+    "return_waveforms": false
+  }
+}
