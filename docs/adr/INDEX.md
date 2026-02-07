@@ -9,3 +9,4 @@
 | [ADR-0005](docs/adr/0005-error-handling-timeout-policy.md) | 0005-error-handling-timeout-policy.md |  |  |  |  |
 | [ADR-0006](docs/adr/0006-artifact-reference-policy.md) | 0006-artifact-reference-policy.md |  |  |  |  |
 | [ADR-0007](docs/adr/0007-autotune-policy.md) | 0007-autotune-policy.md |  |  |  |  |
+| [ADR-0008](docs/adr/0008-distribution-artifacts-cli-entrypoint.md) | 0008-distribution-artifacts-cli-entrypoint.md |  |  |  |  |
