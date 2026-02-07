@@ -124,6 +124,29 @@ This roadmap captures the **required capabilities** for coherent QPSK long-haul 
 - **Metrics:** required fields must be finite and within valid ranges (e.g., BER in [0,1]).
 - **Determinism:** same seed/spec → identical summary metrics (within tolerance).
 
+## Sanity Checks
+
+Run the following sanity checks to validate end-to-end behavior and metric integrity. Each check should assert the
+expected behavior and confirm metric ranges (BER in [0,1], EVM ≥ 0, and OSNR/latency values are finite) to guard
+against invalid outputs.
+
+1. **Back-to-back BER ~ 0 (no channel impairments):** Disable dispersion, nonlinearity, ASE, and PMD. Expect BER to be
+   approximately zero and within [0,1], with EVM ≥ 0 and finite OSNR/latency metrics.
+2. **Dispersion-only improves after CD compensation:** Enable dispersion only, compare BER/EVM before and after
+   `cd_comp` in DSP; BER should improve and remain within [0,1], EVM should drop or remain stable, and OSNR/latency
+   should remain finite.
+3. **ASE-only monotonic BER vs OSNR:** Enable ASE noise only and sweep amplifier noise figure or OSNR target. BER should
+   monotonically worsen as OSNR decreases, staying within [0,1], with EVM ≥ 0 and finite latency/OSNR values.
+4. **Launch-power sweep shows an optimum:** Sweep launch power across a reasonable range. BER/EVM should show a clear
+   optimum (U-shape or minimum) due to linear vs nonlinear trade-offs; BER remains within [0,1], EVM ≥ 0, OSNR/latency
+   finite.
+5. **DSP should not degrade BER:** Compare BER with the full DSP chain enabled vs a baseline with only essential blocks
+   (e.g., matched filter + CD). BER should not worsen with additional DSP blocks; values must stay in [0,1], EVM ≥ 0,
+   and OSNR/latency finite.
+6. **Deterministic seed reproducibility:** Run the same spec and seed twice; summary outputs (BER, EVM, OSNR, latency)
+   must match exactly or within tolerance, and remain within expected ranges (BER in [0,1], EVM ≥ 0, finite OSNR and
+   latency).
+
 ## Artifacts & Visualization Outputs
 
 Artifacts are controlled by the output flags (`outputs.artifact_level`, `outputs.return_waveforms`) and should follow the
