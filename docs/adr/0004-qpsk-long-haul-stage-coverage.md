@@ -1,7 +1,7 @@
 **Title:** Define long-haul QPSK stage feature coverage via OptiCommPy adapter
 
 - **ADR ID:** `0004`
-- **Status:** `Proposed`
+- **Status:** `Accepted`
 - **Date:** `2025-09-27`
 - **Deciders:** `@fiber-physics`
 - **Area:** `phys-pipeline`
@@ -50,6 +50,11 @@
 - **Monitoring & Telemetry:** track stage warnings when fallback used.
 - **Documentation:** update ADR index; keep adapter docs aligned with OptiCommPy usage.
 
+### Update: OptiCommPy channel mapping details
+- **Effects toggles:** dispersion → `param.D`, nonlinearity → `param.gamma`, ASE → `param.amp` (`edfa` vs `ideal`).
+- **Amplifier modes:** auto-gain computes per-span gain as `min(span_loss_db, max_gain_db)`; fixed-gain uses
+  `fixed_gain_db` with adapter-level scaling to honor the requested gain.
+
 ### Stage feature coverage (long-haul QPSK)
 
 | Stage feature | OptiCommPy support | Adapter invocation (planned) | Gap / fallback behavior |
@@ -81,5 +86,6 @@
 
 ### Changelog
 - `2025-09-27` — Proposed by @fiber-physics
+- `2025-09-29` — Accepted; implemented effects toggles and amplifier-mode mapping in OptiCommPy adapter.
 
 ---
