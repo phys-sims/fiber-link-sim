@@ -3,6 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
+import pytest
+
+from fiber_link_sim.adapters.opticommpy import units
 from fiber_link_sim.adapters.opticommpy.param_builders import build_channel_params
 from fiber_link_sim.data_models.spec_models import SimulationSpec
 
@@ -56,3 +60,23 @@ def test_channel_params_fixed_and_capped_gain() -> None:
 
     assert capped_param.amp_gain_db == 5.0
     assert capped_param.amp_mode == "auto_gain"
+
+
+def test_channel_params_unit_normalization() -> None:
+    spec_data = _load_example("qpsk_longhaul_manakov.json")
+    spec_data["propagation"]["effects"] = {
+        "dispersion": True,
+        "nonlinearity": True,
+        "ase": False,
+        "pmd": False,
+        "env_effects": False,
+    }
+    spec = SimulationSpec.model_validate(spec_data)
+    param, _ = build_channel_params(spec, seed=999)
+
+    assert param.gamma == pytest.approx(spec.fiber.gamma_w_inv_m * 1e3)
+    wavelength_m = units.wavelength_m(units.carrier_frequency_hz())
+    expected_dispersion = (
+        -(2.0 * np.pi * units.C_M_S / (wavelength_m**2)) * spec.fiber.beta2_s2_per_m * 1e6
+    )
+    assert param.D == pytest.approx(expected_dispersion)

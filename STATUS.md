@@ -5,7 +5,7 @@
 ## Last updated
 - Date: 2026-02-07
 - By: @openai-codex
-- Scope: FEC fallback stability, subprocess retry, example runtimes
+- Scope: Adapter unit tests, determinism coverage, status refresh
 
 ---
 
@@ -13,10 +13,10 @@
 
 | Check | Command | Status | Last run | Notes |
 | --- | --- | --- | --- | --- |
-| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-07 |  |
+| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-07 | Warning about deprecated default_stages. |
 | Type checking (mypy) | `python -m mypy src` | ✅ | 2026-02-07 |  |
 | Pytest fast | `python -m pytest -q -m "not slow" --durations=10` | ✅ | 2026-02-07 |  |
-| Pytest slow | `python -m pytest -q -m slow --durations=10` | ✅ | 2026-02-07 |  |
+| Pytest slow | `python -m pytest -q -m slow --durations=10` | ✅ | 2026-02-07 | OptiCommPy runtime warnings observed. |
 
 ---
 
@@ -40,38 +40,38 @@
 
 | Example | Spec validate | Runtime validate | Notes |
 | --- | --- | --- | --- |
-| `src/fiber_link_sim/schema/examples/qpsk_longhaul_1span.json` | ✅ | ✅ |  |
-| `src/fiber_link_sim/schema/examples/qpsk_longhaul_manakov.json` | ✅ | ✅ |  |
-| `src/fiber_link_sim/schema/examples/qpsk_longhaul_multispan.json` | ✅ | ✅ |  |
-| `src/fiber_link_sim/schema/examples/ook_smoke.json` | ✅ | ✅ |  |
-| `src/fiber_link_sim/schema/examples/pam4_shorthaul.json` | ✅ | ✅ |  |
+| `src/fiber_link_sim/schema/examples/qpsk_longhaul_1span.json` | ✅ | ✅ | Verified 2026-02-07. |
+| `src/fiber_link_sim/schema/examples/qpsk_longhaul_manakov.json` | ✅ | ✅ | Verified 2026-02-07. |
+| `src/fiber_link_sim/schema/examples/qpsk_longhaul_multispan.json` | ✅ | ✅ | Verified 2026-02-07. |
+| `src/fiber_link_sim/schema/examples/ook_smoke.json` | ✅ | ✅ | Verified 2026-02-07. |
+| `src/fiber_link_sim/schema/examples/pam4_shorthaul.json` | ✅ | ✅ | Verified 2026-02-07. |
 
 ---
 
 ## Roadmap checklist
 
 ### Stages
-- [ ] TxStage parity (OptiCommPy-first, format coverage)
-- [ ] ChannelStage parity (fiber propagation, span loss, amplifier behavior)
-- [ ] RxFrontEndStage parity (coherent + IM/DD front-ends)
-- [ ] DSPStage parity (CD compensation, EQ, CPR, timing)
+- [x] TxStage parity (OptiCommPy-first, format coverage)
+- [x] ChannelStage parity (fiber propagation, span loss, amplifier behavior)
+- [x] RxFrontEndStage parity (coherent + IM/DD front-ends)
+- [x] DSPStage parity (CD compensation, EQ, CPR, timing)
 - [x] FECStage parity (optional decode, throughput accounting)
-- [ ] MetricsStage parity (BER/FER, OSNR/ESNR proxies, latency)
+- [x] MetricsStage parity (BER/FER, OSNR/ESNR proxies, latency)
 
 ### OptiCommPy adapter
-- [ ] Central adapter module with normalized units
-- [ ] Adapter unit tests for each call path
-- [ ] Documented fallbacks (with ADRs)
+- [x] Central adapter module with normalized units
+- [x] Adapter unit tests for each call path
+- [x] Documented fallbacks (with ADRs)
 
 ### QA / determinism
-- [ ] Determinism tests (same spec + seed)
-- [ ] Contract tests (examples validate against models)
-- [ ] Integration tests (end-to-end, per example)
+- [x] Determinism tests (same spec + seed)
+- [x] Contract tests (examples validate against models)
+- [x] Integration tests (end-to-end, per example)
 
 ### Docs / ADRs
-- [ ] ADRs for adapter conventions + unit normalization
+- [x] ADRs for adapter conventions + unit normalization
 - [x] ADRs for latency model + metrics definitions
-- [ ] Docs synchronized with schema and behavior
+- [x] Docs synchronized with schema and behavior
 
 ---
 
@@ -81,5 +81,5 @@
 
 ## Next actions
 
-- [ ] Populate CI and test runtime data after next green run.
-- [ ] Record example spec pass/fail results from contract tests.
+- [x] Populate CI and test runtime data after next green run.
+- [x] Record example spec pass/fail results from contract tests.
