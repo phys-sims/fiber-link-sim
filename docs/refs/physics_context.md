@@ -26,6 +26,9 @@ for candidate fiber routes and system configurations.
    - Equalization (MIMO for coherent DP, FFE for IM/DD)
    - Carrier phase recovery (coherent)
    - Demap to bits or soft LLRs
+   - **Default ordering when `processing.dsp_chain` is empty:**
+     - **Coherent QPSK:** resample → matched_filter → cd_comp → mimo_eq → cpr → demap
+     - **IM/DD (OOK/PAM4):** resample → matched_filter → ffe → demap
 6. **FEC**
    - Optional LDPC decode (or none for early smoke tests).
 7. **Metrics + latency accounting**
