@@ -56,8 +56,10 @@ This keeps State small and hashable, allowing stage-level caching to work as int
 
 ## Determinism
 
-All randomness must be derived from `runtime.seed`, plus deterministic sub-seeds per stage (e.g., seed hashing with stage name).
-If noise is enabled (ASE, thermal, shot), the same spec+seed must reproduce identical results.
+All randomness must be derived from `runtime.seed`. The pipeline initializes a **root RNG** seeded by `runtime.seed`
+and stores it in State (`state.rng`) for traceability. Each stage derives a deterministic stage RNG (e.g., hashing
+`<seed>-<stage name>`) so stage-level randomness is independent but reproducible. If noise is enabled (ASE, thermal,
+shot), the same spec+seed must reproduce identical results.
 
 ## Artifacts vs metrics
 

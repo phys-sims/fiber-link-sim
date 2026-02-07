@@ -17,7 +17,7 @@ from fiber_link_sim.data_models.spec_models import (
 )
 from fiber_link_sim.pipeline import build_pipeline
 from fiber_link_sim.stages.base import SimulationState
-from fiber_link_sim.utils import compute_spec_hash
+from fiber_link_sim.utils import compute_spec_hash, create_root_rng
 
 SIM_VERSION = "0.1.0"
 
@@ -57,7 +57,8 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
             "seed": spec_model.runtime.seed,
             "spec_hash": compute_spec_hash(spec_model),
             "version": SIM_VERSION,
-        }
+        },
+        rng=create_root_rng(spec_model.runtime.seed),
     )
 
     pipeline = build_pipeline(spec_model)

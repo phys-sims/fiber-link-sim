@@ -13,7 +13,7 @@ from fiber_link_sim.stages.configs import (
     RxFrontEndStageConfig,
     TxStageConfig,
 )
-from fiber_link_sim.utils import bits_per_symbol, derive_rng, total_link_length_m
+from fiber_link_sim.utils import bits_per_symbol, total_link_length_m
 
 
 @dataclass(slots=True)
@@ -23,7 +23,7 @@ class TxStage(Stage):
 
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
         spec = self.cfg.spec
-        rng = derive_rng(spec.runtime.seed, self.name)
+        rng = state.stage_rng(self.name)
         tx_out = ADAPTERS.tx.run(spec, int(rng.integers(0, 2**31 - 1)))
 
         total_bits = int(spec.runtime.n_symbols * bits_per_symbol(spec.signal))
@@ -50,7 +50,7 @@ class ChannelStage(Stage):
 
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
         spec = self.cfg.spec
-        rng = derive_rng(spec.runtime.seed, self.name)
+        rng = state.stage_rng(self.name)
         signal = state.tx.get("waveform")
         if signal is None:
             raise ValueError("missing tx waveform for channel stage")
@@ -75,7 +75,7 @@ class RxFrontEndStage(Stage):
 
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
         spec = self.cfg.spec
-        rng = derive_rng(spec.runtime.seed, self.name)
+        rng = state.stage_rng(self.name)
         signal = state.optical.get("waveform")
         if signal is None:
             raise ValueError("missing optical waveform for rx frontend")
