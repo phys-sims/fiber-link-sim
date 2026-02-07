@@ -23,9 +23,12 @@ def _build_state(spec: SimulationSpec) -> SimulationState:
     state = SimulationState(
         meta={"seed": spec.runtime.seed, "spec_hash": compute_spec_hash(spec)},
     )
-    state.tx["waveform"] = np.zeros(8)
-    state.optical["waveform"] = np.ones(8)
-    state.rx["samples"] = np.full(8, 2.0)
+    state.tx["waveform"] = np.zeros(16)
+    state.tx["symbols"] = np.array([1 + 1j, -1 - 1j, 1 - 1j, -1 + 1j])
+    state.optical["waveform"] = np.ones(16)
+    state.rx["samples"] = np.full(16, 2.0)
+    state.rx["dsp_samples"] = np.full(16, 1.0)
+    state.rx["symbols"] = np.array([1 + 1j, -1 - 1j, 1 - 1j, -1 + 1j])
     return state
 
 
@@ -57,10 +60,36 @@ def test_waveform_refs_present_when_requested(
     stage.process(state)
 
     names = {artifact["name"] for artifact in state.artifacts}
-    assert names == {"tx_waveform", "optical_waveform", "rx_samples"}
+    assert names == {
+        "channel_psd",
+        "dsp_constellation",
+        "dsp_eye",
+        "dsp_phase_error",
+        "optical_waveform",
+        "rx_eye",
+        "rx_samples",
+        "tx_psd",
+        "tx_waveform",
+    }
 
     for artifact in state.artifacts:
         ref = artifact["ref"]
         assert isinstance(ref, str)
         path = tmp_path / "artifacts" / compute_spec_hash(spec) / f"{artifact['name']}.npz"
         assert path.exists()
+
+
+def test_artifacts_absent_when_waveforms_disabled(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    spec_data = _load_example("ook_smoke.json")
+    spec_data["outputs"]["artifact_level"] = "basic"
+    spec_data["outputs"]["return_waveforms"] = False
+    spec = SimulationSpec.model_validate(spec_data)
+
+    state = _build_state(spec)
+    stage = ArtifactsStage(cfg=ArtifactsStageConfig(spec=spec))
+    stage.process(state)
+
+    assert state.artifacts == []

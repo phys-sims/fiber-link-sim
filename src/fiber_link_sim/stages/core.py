@@ -2,11 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import log10
-from pathlib import Path
 
 import numpy as np
 
 from fiber_link_sim.adapters.opticommpy import ADAPTERS
+from fiber_link_sim.artifacts import (
+    ArtifactPayload,
+    artifact_root_for_spec,
+    build_eye_traces,
+    compute_phase_error,
+    compute_psd,
+    save_npz_artifact,
+)
 from fiber_link_sim.stages.base import SimulationState, Stage, StageResult
 from fiber_link_sim.stages.configs import (
     ArtifactsStageConfig,
@@ -101,6 +108,7 @@ class DSPStage(Stage):
         rng = state.stage_rng(self.name)
         np.random.seed(int(rng.integers(0, 2**31 - 1)))
         dsp_out = ADAPTERS.dsp.run(spec, samples, spec.processing.dsp_chain)
+        state.rx["dsp_samples"] = dsp_out.samples
         state.rx["symbols"] = dsp_out.symbols
         if dsp_out.hard_bits is not None:
             state.rx["hard_bits"] = dsp_out.hard_bits
@@ -229,8 +237,7 @@ class ArtifactsStage(Stage):
         if not spec.outputs.return_waveforms:
             return StageResult(state=state)
 
-        artifact_root = Path("artifacts") / str(state.meta.get("spec_hash", "unknown"))
-        artifact_root.mkdir(parents=True, exist_ok=True)
+        artifact_root = artifact_root_for_spec(str(state.meta.get("spec_hash", "unknown")))
 
         waveforms: list[tuple[str, np.ndarray | None]] = [
             ("tx_waveform", state.tx.get("waveform")),
@@ -241,20 +248,79 @@ class ArtifactsStage(Stage):
         for name, waveform in waveforms:
             if waveform is None:
                 continue
-            payload = np.asarray(waveform)
-            filename = f"{name}.npz"
-            path = artifact_root / filename
-            np.savez_compressed(path, data=payload)
-            ref = f"artifact://{artifact_root.name}/{filename}"
             state.artifacts.append(
-                {
-                    "name": name,
-                    "type": "npz",
-                    "ref": ref,
-                    "mime": "application/octet-stream",
-                    "bytes": path.stat().st_size,
-                }
+                save_npz_artifact(
+                    artifact_root,
+                    ArtifactPayload(name=name, arrays={"data": np.asarray(waveform)}),
+                )
             )
+
+        fs_hz = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol
+        tx_waveform = state.tx.get("waveform")
+        if tx_waveform is not None:
+            freqs, psd_db = compute_psd(np.asarray(tx_waveform), fs_hz)
+            if freqs.size:
+                state.artifacts.append(
+                    save_npz_artifact(
+                        artifact_root,
+                        ArtifactPayload(name="tx_psd", arrays={"freq_hz": freqs, "psd_db": psd_db}),
+                    )
+                )
+
+        optical_waveform = state.optical.get("waveform")
+        if optical_waveform is not None:
+            freqs, psd_db = compute_psd(np.asarray(optical_waveform), fs_hz)
+            if freqs.size:
+                state.artifacts.append(
+                    save_npz_artifact(
+                        artifact_root,
+                        ArtifactPayload(
+                            name="channel_psd", arrays={"freq_hz": freqs, "psd_db": psd_db}
+                        ),
+                    )
+                )
+
+        rx_samples = state.rx.get("samples")
+        if rx_samples is not None:
+            traces = build_eye_traces(np.asarray(rx_samples), spec.runtime.samples_per_symbol)
+            if traces.size:
+                state.artifacts.append(
+                    save_npz_artifact(
+                        artifact_root,
+                        ArtifactPayload(name="rx_eye", arrays={"traces": traces}),
+                    )
+                )
+
+        dsp_samples = state.rx.get("dsp_samples")
+        if dsp_samples is not None:
+            traces = build_eye_traces(np.asarray(dsp_samples), spec.runtime.samples_per_symbol)
+            if traces.size:
+                state.artifacts.append(
+                    save_npz_artifact(
+                        artifact_root,
+                        ArtifactPayload(name="dsp_eye", arrays={"traces": traces}),
+                    )
+                )
+
+        rx_symbols = state.rx.get("symbols")
+        if rx_symbols is not None:
+            symbols = np.asarray(rx_symbols).reshape(-1)
+            if symbols.size:
+                state.artifacts.append(
+                    save_npz_artifact(
+                        artifact_root,
+                        ArtifactPayload(name="dsp_constellation", arrays={"symbols": symbols}),
+                    )
+                )
+
+            phase_error = compute_phase_error(symbols, state.tx.get("symbols"))
+            if phase_error.size:
+                state.artifacts.append(
+                    save_npz_artifact(
+                        artifact_root,
+                        ArtifactPayload(name="dsp_phase_error", arrays={"radians": phase_error}),
+                    )
+                )
 
         return StageResult(state=state)
 
