@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any, cast
 
+import importlib
 import numpy as np
 import pytest
 
+simulate_module = importlib.import_module("fiber_link_sim.simulate")
 from fiber_link_sim.adapters.opticommpy.stages import ADAPTERS
 from fiber_link_sim.adapters.opticommpy.types import TxOutput
 from fiber_link_sim.data_models.spec_models import SimulationResult, SimulationSpec
@@ -69,6 +72,29 @@ def test_simulation_runtime_error_returns_structured_result(monkeypatch: Any) ->
     assert result.error.code == "runtime_error"
     assert "missing tx waveform" in result.error.message
     assert result.error.details["exception_type"] == "ValueError"
+    assert result.provenance.seed == spec.runtime.seed
+    assert result.provenance.spec_hash == compute_spec_hash(spec)
+    assert result.provenance.runtime_s >= 0
+    SimulationResult.model_validate(result.model_dump())
+
+
+def test_simulation_timeout_returns_structured_result(monkeypatch: Any) -> None:
+    spec_data = _load_example("ook_smoke.json")
+    spec_data["runtime"]["max_runtime_s"] = 0.05
+    spec = SimulationSpec.model_validate(spec_data)
+
+    class _SlowPipeline:
+        def run(self, state: Any) -> None:
+            time.sleep(0.2)
+
+    monkeypatch.setattr(simulate_module, "build_pipeline", lambda _: _SlowPipeline())
+
+    result = simulate(spec_data)
+
+    assert result.status == "error"
+    assert result.summary is None
+    assert result.error is not None
+    assert result.error.code == "timeout"
     assert result.provenance.seed == spec.runtime.seed
     assert result.provenance.spec_hash == compute_spec_hash(spec)
     assert result.provenance.runtime_s >= 0

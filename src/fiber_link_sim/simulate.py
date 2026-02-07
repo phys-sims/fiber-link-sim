@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from pathlib import Path
 from typing import Any
 
@@ -62,8 +64,59 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
     )
 
     pipeline = build_pipeline(spec_model)
+    timeout_s = spec_model.runtime.max_runtime_s - (time.perf_counter() - start)
+    if timeout_s <= 0:
+        runtime_s = time.perf_counter() - start
+        return SimulationResult(
+            v=spec_model.v,
+            status="error",
+            error=ErrorInfo(
+                code="timeout",
+                message="runtime exceeded max_runtime_s before pipeline execution",
+                details={
+                    "max_runtime_s": spec_model.runtime.max_runtime_s,
+                    "elapsed_s": runtime_s,
+                },
+            ),
+            provenance=Provenance(
+                sim_version=SIM_VERSION,
+                spec_hash=state.meta["spec_hash"],
+                seed=spec_model.runtime.seed,
+                runtime_s=runtime_s,
+                backend=spec_model.propagation.backend,
+                model=spec_model.propagation.model,
+            ),
+            warnings=state.meta.get("warnings", []),
+        )
+
+    executor = ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(pipeline.run, state)
     try:
-        pipeline.run(state)
+        future.result(timeout=timeout_s)
+    except FuturesTimeoutError:
+        runtime_s = time.perf_counter() - start
+        future.cancel()
+        return SimulationResult(
+            v=spec_model.v,
+            status="error",
+            error=ErrorInfo(
+                code="timeout",
+                message="runtime exceeded max_runtime_s during pipeline execution",
+                details={
+                    "max_runtime_s": spec_model.runtime.max_runtime_s,
+                    "elapsed_s": runtime_s,
+                },
+            ),
+            provenance=Provenance(
+                sim_version=SIM_VERSION,
+                spec_hash=state.meta["spec_hash"],
+                seed=spec_model.runtime.seed,
+                runtime_s=runtime_s,
+                backend=spec_model.propagation.backend,
+                model=spec_model.propagation.model,
+            ),
+            warnings=state.meta.get("warnings", []),
+        )
     except Exception as exc:
         runtime_s = time.perf_counter() - start
         return SimulationResult(
@@ -84,6 +137,8 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
             ),
             warnings=state.meta.get("warnings", []),
         )
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
 
     warnings = state.meta.get("warnings", [])
     artifacts = state.artifacts
