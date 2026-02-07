@@ -12,4 +12,4 @@
 | [ADR-0008](docs/adr/0008-distribution-artifacts-cli-entrypoint.md) | 0008-distribution-artifacts-cli-entrypoint.md |  |  |  |  |
 | [ADR-0009](docs/adr/0009-latency-model.md) | 0009-latency-model.md |  |  |  |  |
 | [ADR-0010](docs/adr/0010-ldpc-fec-fallback.md) | 0010-ldpc-fec-fallback.md |  |  |  |  |
-| [ADR-0011](docs/adr/0011-state-refs-artifact-store.md) | 0011-state-refs-artifact-store.md | Accepted | 2026-02-08 | phys-pipeline | data-model, determinism, caching, testing |
+| [ADR-0011](docs/adr/0011-state-refs-artifact-store.md) | 0011-state-refs-artifact-store.md |  |  |  |  |
