@@ -8,10 +8,10 @@ If agents touch anything, **they should not change the meaning of fields silentl
 
 ## Where the schema lives (src-style repo)
 
-Authoritative copies should ship with the package:
+Authoritative copies ship with the package:
 
-- `src/fiber_physics/schema/simulation_spec.schema.v0.1.json`
-- `src/fiber_physics/schema/simulation_result.schema.v0.1.json`
+- `src/fiber_link_sim/schema/simulation_spec.schema.v0.1.json`
+- `src/fiber_link_sim/schema/simulation_result.schema.v0.1.json`
 
 A human-facing mirror can exist at repo root (`schema/`) but should be generated from the authoritative copy, not hand-edited.
 
