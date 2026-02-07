@@ -119,14 +119,26 @@ Each ADR should also state how the decision is validated (unit/integration tests
 
 If there is tooling such as `scripts/adr_tools.py`, use it; otherwise create ADRs manually and update any index files used.
 
-## Developer workflow (commands)
-Preferred:
-- Install dev deps: `python -m pip install -e ".[dev]"`
-- Run tests: `python -m pytest -q`
-- (Optional) type check: `python -m mypy src`
-- (Optional) lint/format: run configured tools per repo config
+## Developer workflow (CI must stay green)
+Before opening/submitting any PR, ensure **all CI gates pass locally** (or via the repo’s CI runner):
 
-Always keep schemas/examples/docs synchronized with code behavior.
+### Required checks (must pass)
+- **Pre-commit / linting & formatting**
+  - `python -m pre_commit run -a`
+- **Type checking**
+  - `python -m mypy src`
+- **Tests**
+  - `python -m pytest -q`
+
+### Rules
+- Do not submit a PR that fails any of the above checks.
+- If a change causes failures, fix them in the same branch/PR (do not leave the repo in a broken state).
+- Prefer the smallest change that makes CI green again; document any non-trivial fix in an ADR or PR notes when appropriate.
+- Always keep schemas/examples/docs synchronized with code behavior.
+
+### Setup (preferred)
+- Install dev deps: `python -m pip install -e ".[dev]"`
+- Run the full CI-equivalent suite with the three commands above.
 
 ## Guardrails
 - Favor readability and correctness over premature optimization.
