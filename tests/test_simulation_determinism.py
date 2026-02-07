@@ -17,5 +17,12 @@ def test_simulation_determinism() -> None:
     assert result_b.status == "success"
     assert result_a.summary is not None
     assert result_b.summary is not None
+    assert result_a.provenance is not None
+    assert result_b.provenance is not None
+    assert result_a.provenance.seed == result_b.provenance.seed
     assert isclose(result_a.summary.latency_s.total, result_b.summary.latency_s.total)
+    assert isclose(
+        result_a.summary.throughput_bps.net_after_fec, result_b.summary.throughput_bps.net_after_fec
+    )
     assert isclose(result_a.summary.errors.pre_fec_ber, result_b.summary.errors.pre_fec_ber)
+    assert isclose(result_a.summary.snr_db, result_b.summary.snr_db)

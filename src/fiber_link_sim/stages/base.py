@@ -23,6 +23,7 @@ class SimulationState(State):
     rx: dict[str, Any] = field(default_factory=dict)
     stats: dict[str, Any] = field(default_factory=dict)
     artifacts: list[dict[str, Any]] = field(default_factory=list)
+    rng: np.random.Generator | None = None
 
     def deepcopy(self) -> SimulationState:
         return copy.deepcopy(self)
@@ -32,6 +33,12 @@ class SimulationState(State):
         for payload in (self.meta, self.tx, self.optical, self.rx, self.stats):
             h.update(_hash_payload(payload))
         return h.digest()
+
+    def stage_rng(self, stage_name: str) -> np.random.Generator:
+        from fiber_link_sim.utils import derive_stage_rng
+
+        seed = int(self.meta.get("seed", 0))
+        return derive_stage_rng(seed, stage_name)
 
 
 class Stage(PipelineStage[SimulationState, StageConfig]):

@@ -13,7 +13,11 @@ def compute_spec_hash(spec: SimulationSpec) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def derive_rng(seed: int, stage_name: str) -> np.random.Generator:
+def create_root_rng(seed: int) -> np.random.Generator:
+    return np.random.default_rng(seed)
+
+
+def derive_stage_rng(seed: int, stage_name: str) -> np.random.Generator:
     digest = hashlib.sha256(f"{seed}-{stage_name}".encode()).digest()
     seed_int = int.from_bytes(digest[:8], "big")
     return np.random.default_rng(seed_int)
