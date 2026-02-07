@@ -80,7 +80,9 @@ Front-end assumptions:
 ### `processing`
 User-configurable DSP and FEC chain.
 - `dsp_chain`: ordered list of blocks with `enabled` and `params`.
-- `fec`: optional LDPC decode; if `enabled=false` then scheme is `none` and rate is 1.0.
+- `fec`: optional LDPC decode; if `enabled=false` then scheme is `none` and rate is 1.0. When LDPC is enabled,
+  `fec.params` must include a parity-check matrix `H` plus decoder settings such as `max_iter` (or legacy
+  `max_iters`) and `alg` (`"SPA"` or `"MSA"`).
 - `autotune` (optional): bounded internal tuning in physics (small inner-loop); MCP should still own larger search.
 
 ### `propagation`

@@ -4,9 +4,11 @@ import math
 from typing import Any
 
 import numpy as np
-from optic.comm import modulation  # type: ignore[import-untyped]
+from optic.comm import metrics as opti_metrics  # type: ignore[import-untyped]
+from optic.comm import modulation
 from optic.dsp import carrierRecovery, equalization  # type: ignore[import-untyped]
 from optic.dsp import core as dsp_core
+from optic.utils import dec2bitarray  # type: ignore[import-untyped]
 
 from fiber_link_sim.adapters.opticommpy.param_builders import (
     build_edc_params,
@@ -84,6 +86,8 @@ def run_dsp_chain(spec: SimulationSpec, samples: np.ndarray, blocks: list[DspBlo
     out = samples
     fs = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol
     blocks = resolve_dsp_chain(spec, blocks)
+    demap_enabled = False
+    demap_soft = False
 
     for block in blocks:
         if not block.enabled:
@@ -146,10 +150,17 @@ def run_dsp_chain(spec: SimulationSpec, samples: np.ndarray, blocks: list[DspBlo
             out = out * np.exp(-1j * theta)
             params["cpr"] = {"avg_window": n_avg, "test_angles": test_angles}
         elif block.name == "demap":
-            params["demap"] = {"soft": bool(block.params.get("soft", False))}
+            demap_enabled = True
+            demap_soft = bool(block.params.get("soft", False))
+            params["demap"] = {"soft": demap_soft}
 
     symbols = _downsample(out, spec.runtime.samples_per_symbol)
-    return DspOutput(symbols=symbols, params=params)
+    hard_bits = None
+    llrs = None
+    if demap_enabled:
+        order, const_type = _constellation_params(spec.signal.format)
+        hard_bits, llrs = _demap_symbols(symbols, order, const_type, demap_soft)
+    return DspOutput(symbols=symbols, params=params, hard_bits=hard_bits, llrs=llrs)
 
 
 def _downsample(samples: np.ndarray, sps: int) -> np.ndarray:
@@ -157,3 +168,51 @@ def _downsample(samples: np.ndarray, sps: int) -> np.ndarray:
         return samples
     offset = int(math.floor(sps / 2))
     return samples[offset::sps]
+
+
+def _constellation_params(signal_format: str) -> tuple[int, str]:
+    if signal_format == "coherent_qpsk":
+        return 4, "psk"
+    if signal_format == "imdd_ook":
+        return 2, "ook"
+    return 4, "pam"
+
+
+def _demap_symbols(
+    symbols: np.ndarray, order: int, const_type: str, soft: bool
+) -> tuple[np.ndarray, np.ndarray | None]:
+    flattened = _flatten_symbols(symbols)
+    hard_bits = modulation.demodulateGray(flattened, order, const_type).astype(int)
+    if not soft:
+        return hard_bits, None
+
+    const_symb = modulation.grayMapping(order, const_type)
+    const_symb = dsp_core.pnorm(const_symb)
+    bit_map = _build_bit_map(const_symb, order)
+    rx_symb = dsp_core.pnorm(flattened)
+    sigma2 = _estimate_noise_variance(rx_symb, const_symb)
+    px = np.full((order, 1), 1.0 / order)
+    llrs = np.asarray(opti_metrics.calcLLR(rx_symb, sigma2, const_symb, bit_map, px))
+    if llrs.ndim > 1:
+        llrs = llrs.reshape(-1)
+    return hard_bits, llrs
+
+
+def _build_bit_map(const_symb: np.ndarray, order: int) -> np.ndarray:
+    bits_per_symbol = int(np.log2(order))
+    ind_map = modulation.minEuclid(const_symb, const_symb)
+    bit_map = dec2bitarray(ind_map, bits_per_symbol)
+    return bit_map.reshape(-1, bits_per_symbol)
+
+
+def _estimate_noise_variance(rx_symb: np.ndarray, const_symb: np.ndarray) -> float:
+    indices = modulation.minEuclid(rx_symb, const_symb)
+    decided = const_symb[indices]
+    sigma2 = float(np.mean(np.abs(rx_symb - decided) ** 2))
+    if not np.isfinite(sigma2) or sigma2 <= 0.0:
+        sigma2 = 1e-3
+    return sigma2
+
+
+def _flatten_symbols(symbols: np.ndarray) -> np.ndarray:
+    return np.asarray(symbols).reshape(-1)

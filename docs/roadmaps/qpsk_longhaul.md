@@ -132,6 +132,13 @@ baseline implementation decisions.
 - **Metrics:** post-FEC BER/FER when enabled.
 - **Determinism:** same seed + same soft bits → identical decode results.
 
+**Current implementation note:** LDPC decoding is now performed via OptiCommPy when FEC is enabled. The
+`processing.fec.params` payload must include:
+- `H`: parity-check matrix (2D list/array, shape `m x n`).
+- `max_iter` (or legacy `max_iters`): maximum decoder iterations.
+- `alg`: `"SPA"` or `"MSA"` decoder selection.
+- `prec` (optional): numeric precision (defaults to `np.float32`).
+
 ### MetricsStage (BER/FER/OSNR/latency + artifacts)
 
 **Required capabilities**

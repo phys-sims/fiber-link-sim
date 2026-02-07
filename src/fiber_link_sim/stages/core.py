@@ -102,6 +102,10 @@ class DSPStage(Stage):
         np.random.seed(int(rng.integers(0, 2**31 - 1)))
         dsp_out = ADAPTERS.dsp.run(spec, samples, spec.processing.dsp_chain)
         state.rx["symbols"] = dsp_out.symbols
+        if dsp_out.hard_bits is not None:
+            state.rx["hard_bits"] = dsp_out.hard_bits
+        if dsp_out.llrs is not None:
+            state.rx["llrs"] = dsp_out.llrs
         state.stats["dsp"] = dsp_out.params
         return StageResult(state=state)
 
@@ -127,17 +131,18 @@ class FECStage(Stage):
                 }
             )
         pre_fec_ber = float(state.stats.get("pre_fec_ber", 0.0))
-        fec_out = ADAPTERS.fec.run(spec, pre_fec_ber)
+        llrs = state.rx.get("llrs")
+        hard_bits = state.rx.get("hard_bits")
+        tx_symbols = state.tx.get("symbols")
+        if tx_symbols is None:
+            raise ValueError("missing tx symbols for FEC stage")
+        fec_out = ADAPTERS.fec.run(spec, tx_symbols, llrs, hard_bits, pre_fec_ber)
         state.stats.update(
             {
                 "post_fec_ber": fec_out.post_fec_ber,
                 "fer": fec_out.fer,
             }
         )
-        if spec.processing.fec.enabled:
-            state.meta.setdefault("warnings", []).append(
-                "LDPC decoding is approximated until parity-check matrices are provided."
-            )
         return StageResult(state=state)
 
 
