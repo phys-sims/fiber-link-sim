@@ -1,8 +1,9 @@
 """
 Pydantic models for SimulationSpec / SimulationResult.
 
-This file is intended to be the *single source of truth* for runtime validation at the library boundary.
-JSON Schema files in src/fiber_physics/schema/ should be generated from (or kept consistent with) these models.
+This file is intended to be the *single source of truth* for runtime validation at the
+library boundary. JSON Schema files in src/fiber_physics/schema/ should be generated
+from (or kept consistent with) these models.
 
 v0.1 focuses on:
 - coherent QPSK long-haul (Manakov DP) as the primary target
@@ -12,19 +13,19 @@ v0.1 focuses on:
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
 
 # -----------------------------
 # Spec models
 # -----------------------------
 
+
 class Scenario(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
     tags: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -32,14 +33,17 @@ class Scenario(BaseModel):
 class Geo(BaseModel):
     model_config = ConfigDict(extra="forbid")
     enabled: bool = False
-    polyline_wgs84: list[tuple[float, float]] = Field(default_factory=list, description="Optional [lon, lat] points.")
+    polyline_wgs84: list[tuple[float, float]] = Field(
+        default_factory=list,
+        description="Optional [lon, lat] points.",
+    )
 
 
 class PathSegment(BaseModel):
     model_config = ConfigDict(extra="forbid")
     length_m: float = Field(..., gt=0)
-    temp_c: Optional[float] = None
-    notes: Optional[str] = None
+    temp_c: float | None = None
+    notes: str | None = None
 
 
 class Path(BaseModel):
@@ -52,7 +56,7 @@ class Fiber(BaseModel):
     model_config = ConfigDict(extra="forbid")
     alpha_db_per_km: float = Field(..., ge=0)
     beta2_s2_per_m: float
-    beta3_s3_per_m: Optional[float] = None
+    beta3_s3_per_m: float | None = None
     gamma_w_inv_m: float = Field(..., ge=0)
     pmd_ps_sqrt_km: float = Field(0.0, ge=0)
     n_group: float = Field(..., gt=1.0)
@@ -66,16 +70,20 @@ class Amplifier(BaseModel):
     model_config = ConfigDict(extra="forbid")
     type: AmplifierType
     mode: AmplifierMode
-    noise_figure_db: Optional[float] = Field(None, ge=0)
-    max_gain_db: Optional[float] = Field(None, ge=0)
-    fixed_gain_db: Optional[float] = None
+    noise_figure_db: float | None = Field(None, ge=0)
+    max_gain_db: float | None = Field(None, ge=0)
+    fixed_gain_db: float | None = None
 
     @model_validator(mode="after")
-    def _check_amp(self) -> "Amplifier":
+    def _check_amp(self) -> Amplifier:
         if self.type == "none":
             if self.mode != "none":
                 raise ValueError("amplifier.mode must be 'none' when amplifier.type is 'none'")
-            if self.noise_figure_db is not None or self.max_gain_db is not None or self.fixed_gain_db is not None:
+            if (
+                self.noise_figure_db is not None
+                or self.max_gain_db is not None
+                or self.fixed_gain_db is not None
+            ):
                 raise ValueError("gain/NF fields must be omitted when amplifier.type is 'none'")
             return self
 
@@ -85,7 +93,9 @@ class Amplifier(BaseModel):
         if self.mode == "auto_gain" and self.max_gain_db is None:
             raise ValueError("amplifier.max_gain_db is required when amplifier.mode is 'auto_gain'")
         if self.mode == "fixed_gain" and self.fixed_gain_db is None:
-            raise ValueError("amplifier.fixed_gain_db is required when amplifier.mode is 'fixed_gain'")
+            raise ValueError(
+                "amplifier.fixed_gain_db is required when amplifier.mode is 'fixed_gain'"
+            )
         return self
 
 
@@ -171,7 +181,7 @@ class Fec(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
-    def _check_fec(self) -> "Fec":
+    def _check_fec(self) -> Fec:
         if not self.enabled:
             if self.scheme != "none":
                 raise ValueError("fec.scheme must be 'none' when fec.enabled is false")
@@ -184,12 +194,14 @@ class Autotune(BaseModel):
     model_config = ConfigDict(extra="forbid")
     enabled: bool = False
     budget_trials: int = Field(30, ge=1)
-    targets: list[Literal["max_net_after_fec"]] = Field(default_factory=lambda: ["max_net_after_fec"])
+    targets: list[Literal["max_net_after_fec"]] = Field(
+        default_factory=lambda: ["max_net_after_fec"],
+    )
 
 
 class Processing(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    autotune: Optional[Autotune] = None
+    autotune: Autotune | None = None
     dsp_chain: list[DspBlock] = Field(default_factory=list)
     fec: Fec
 
@@ -241,7 +253,7 @@ class Outputs(BaseModel):
 class SimulationSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
     v: str = Field(..., min_length=1)
-    scenario: Optional[Scenario] = None
+    scenario: Scenario | None = None
     path: Path
     fiber: Fiber
     spans: Spans
@@ -253,7 +265,7 @@ class SimulationSpec(BaseModel):
     outputs: Outputs
 
     @model_validator(mode="after")
-    def _cross_checks(self) -> "SimulationSpec":
+    def _cross_checks(self) -> SimulationSpec:
         fmt = self.signal.format
         if fmt == "coherent_qpsk":
             if self.transceiver.rx.coherent is not True:
@@ -266,7 +278,9 @@ class SimulationSpec(BaseModel):
             if self.signal.n_pol != 1:
                 raise ValueError("signal.n_pol must be 1 for IM/DD formats")
             if self.propagation.model != "scalar_glnse":
-                raise ValueError("propagation.model must be 'scalar_glnse' for IM/DD formats in v0.1")
+                raise ValueError(
+                    "propagation.model must be 'scalar_glnse' for IM/DD formats in v0.1"
+                )
 
         if self.propagation.model == "manakov" and self.signal.n_pol != 2:
             raise ValueError("manakov propagation requires signal.n_pol == 2")
@@ -311,10 +325,10 @@ class Summary(BaseModel):
     latency_s: Latency
     throughput_bps: Throughput
     errors: Errors
-    osnr_db: Optional[float] = None
-    snr_db: Optional[float] = None
-    evm_rms: Optional[float] = None
-    q_factor_db: Optional[float] = None
+    osnr_db: float | None = None
+    snr_db: float | None = None
+    evm_rms: float | None = None
+    q_factor_db: float | None = None
 
 
 class Provenance(BaseModel):
@@ -323,8 +337,8 @@ class Provenance(BaseModel):
     spec_hash: str
     seed: int
     runtime_s: float = Field(..., ge=0)
-    backend: Optional[str] = None
-    model: Optional[str] = None
+    backend: str | None = None
+    model: str | None = None
 
 
 ArtifactType = Literal["png", "npz", "json", "txt", "bin"]
@@ -335,8 +349,8 @@ class Artifact(BaseModel):
     name: str
     type: ArtifactType
     ref: str
-    mime: Optional[str] = None
-    bytes: Optional[int] = Field(None, ge=0)
+    mime: str | None = None
+    bytes: int | None = Field(None, ge=0)
 
 
 ErrorCode = Literal["validation_error", "runtime_error", "timeout", "not_implemented"]
@@ -353,15 +367,15 @@ class SimulationResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
     v: str = Field(..., min_length=1)
     status: ResultStatus
-    summary: Optional[Summary] = None
-    error: Optional[ErrorInfo] = None
+    summary: Summary | None = None
+    error: ErrorInfo | None = None
     provenance: Provenance
     warnings: list[str] = Field(default_factory=list)
     artifacts: list[Artifact] = Field(default_factory=list)
-    best_found_spec_patch: Optional[dict[str, Any]] = None
+    best_found_spec_patch: dict[str, Any] | None = None
 
     @model_validator(mode="after")
-    def _check_status(self) -> "SimulationResult":
+    def _check_status(self) -> SimulationResult:
         if self.status == "success":
             if self.summary is None:
                 raise ValueError("summary is required when status == 'success'")
