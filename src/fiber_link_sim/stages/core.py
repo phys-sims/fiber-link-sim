@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from math import log10
 
@@ -8,11 +9,9 @@ import numpy as np
 from fiber_link_sim.adapters.opticommpy import ADAPTERS
 from fiber_link_sim.artifacts import (
     ArtifactPayload,
-    artifact_root_for_spec,
     build_eye_traces,
     compute_phase_error,
     compute_psd,
-    save_npz_artifact,
 )
 from fiber_link_sim.stages.base import SimulationState, Stage, StageResult
 from fiber_link_sim.stages.configs import (
@@ -33,24 +32,22 @@ class TxStage(Stage):
     name: str = "tx"
 
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        start = time.perf_counter()
         spec = self.cfg.spec
         rng = state.stage_rng(self.name)
         tx_out = ADAPTERS.tx.run(spec, int(rng.integers(0, 2**31 - 1)))
 
         total_bits = int(spec.runtime.n_symbols * bits_per_symbol(spec.signal))
-        state.tx.update(
-            {
-                "format": spec.signal.format,
-                "n_pol": spec.signal.n_pol,
-                "symbol_rate_baud": spec.signal.symbol_rate_baud,
-                "rolloff": spec.signal.rolloff,
-                "total_bits": total_bits,
-                "symbols": tx_out.symbols,
-                "waveform": tx_out.signal,
-            }
-        )
+        if tx_out.signal is None:
+            raise ValueError("missing tx waveform")
+        if tx_out.symbols is None:
+            raise ValueError("missing tx symbols")
+        state.store_signal("tx", "symbols", tx_out.symbols, units="symbols")
+        state.store_signal("tx", "waveform", tx_out.signal, units="arb")
         state.stats["bits_per_symbol"] = bits_per_symbol(spec.signal)
         state.stats["n_symbols"] = spec.runtime.n_symbols
+        state.stats["total_bits"] = total_bits
+        state.meta.setdefault("stage_timings", {})[self.name] = time.perf_counter() - start
         return StageResult(state=state)
 
 
@@ -60,22 +57,24 @@ class ChannelStage(Stage):
     name: str = "channel"
 
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        start = time.perf_counter()
         spec = self.cfg.spec
         rng = state.stage_rng(self.name)
-        signal = state.tx.get("waveform")
+        signal = state.load_signal("tx", "waveform")
         if signal is None:
             raise ValueError("missing tx waveform for channel stage")
         channel_out = ADAPTERS.channel.run(spec, signal, int(rng.integers(0, 2**31 - 1)))
 
         total_length_m = total_link_length_m(spec.path)
-        state.optical.update(
+        state.store_signal("optical", "waveform", channel_out.signal, units="arb")
+        state.stats.update(
             {
                 "total_length_m": total_length_m,
                 "n_spans": channel_out.n_spans,
                 "osnr_db": channel_out.osnr_db,
-                "waveform": channel_out.signal,
             }
         )
+        state.meta.setdefault("stage_timings", {})[self.name] = time.perf_counter() - start
         return StageResult(state=state)
 
 
@@ -85,13 +84,16 @@ class RxFrontEndStage(Stage):
     name: str = "rx_frontend"
 
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        start = time.perf_counter()
         spec = self.cfg.spec
         rng = state.stage_rng(self.name)
-        signal = state.optical.get("waveform")
+        signal = state.load_signal("optical", "waveform")
         if signal is None:
             raise ValueError("missing optical waveform for rx frontend")
         rx_out = ADAPTERS.rx_frontend.run(spec, signal, int(rng.integers(0, 2**31 - 1)))
-        state.rx.update({"samples": rx_out.samples, "frontend": rx_out.params})
+        state.store_signal("rx", "samples", rx_out.samples, units="arb")
+        state.rx["frontend"] = rx_out.params
+        state.meta.setdefault("stage_timings", {})[self.name] = time.perf_counter() - start
         return StageResult(state=state)
 
 
@@ -101,20 +103,24 @@ class DSPStage(Stage):
     name: str = "dsp"
 
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        start = time.perf_counter()
         spec = self.cfg.spec
-        samples = state.rx.get("samples")
+        samples = state.load_signal("rx", "samples")
         if samples is None:
             raise ValueError("missing rx samples for DSP stage")
-        rng = state.stage_rng(self.name)
-        np.random.seed(int(rng.integers(0, 2**31 - 1)))
         dsp_out = ADAPTERS.dsp.run(spec, samples, spec.processing.dsp_chain)
-        state.rx["dsp_samples"] = dsp_out.samples
-        state.rx["symbols"] = dsp_out.symbols
+        state.store_signal("rx", "dsp_samples", dsp_out.samples, units="arb")
+        state.store_signal("rx", "symbols", dsp_out.symbols, units="symbols")
         if dsp_out.hard_bits is not None:
-            state.rx["hard_bits"] = dsp_out.hard_bits
+            ref = state.store_blob(
+                "hard_bits", dsp_out.hard_bits, role="rx:hard_bits", units="bits"
+            )
+            state.rx["hard_bits_ref"] = ref
         if dsp_out.llrs is not None:
-            state.rx["llrs"] = dsp_out.llrs
+            ref = state.store_blob("llrs", dsp_out.llrs, role="rx:llrs", units="llr")
+            state.rx["llrs_ref"] = ref
         state.stats["dsp"] = dsp_out.params
+        state.meta.setdefault("stage_timings", {})[self.name] = time.perf_counter() - start
         return StageResult(state=state)
 
 
@@ -124,10 +130,11 @@ class FECStage(Stage):
     name: str = "fec"
 
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        start = time.perf_counter()
         spec = self.cfg.spec
         if "pre_fec_ber" not in state.stats:
-            symb_rx = state.rx.get("symbols")
-            symb_tx = state.tx.get("symbols")
+            symb_rx = state.load_signal("rx", "symbols")
+            symb_tx = state.load_signal("tx", "symbols")
             if symb_rx is None or symb_tx is None:
                 raise ValueError("missing symbols for FEC stage")
             metrics = ADAPTERS.metrics.compute(symb_rx, symb_tx, spec)
@@ -139,9 +146,11 @@ class FECStage(Stage):
                 }
             )
         pre_fec_ber = float(state.stats.get("pre_fec_ber", 0.0))
-        llrs = state.rx.get("llrs")
-        hard_bits = state.rx.get("hard_bits")
-        tx_symbols = state.tx.get("symbols")
+        llrs_ref = state.rx.get("llrs_ref")
+        hard_bits_ref = state.rx.get("hard_bits_ref")
+        llrs = state.load_ref(llrs_ref) if llrs_ref else None
+        hard_bits = state.load_ref(hard_bits_ref) if hard_bits_ref else None
+        tx_symbols = state.load_signal("tx", "symbols")
         if tx_symbols is None:
             raise ValueError("missing tx symbols for FEC stage")
         try:
@@ -160,6 +169,7 @@ class FECStage(Stage):
                 "fer": fer,
             }
         )
+        state.meta.setdefault("stage_timings", {})[self.name] = time.perf_counter() - start
         return StageResult(state=state)
 
 
@@ -169,10 +179,11 @@ class MetricsStage(Stage):
     name: str = "metrics"
 
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        start = time.perf_counter()
         spec = self.cfg.spec
         if "pre_fec_ber" not in state.stats:
-            symb_rx = state.rx.get("symbols")
-            symb_tx = state.tx.get("symbols")
+            symb_rx = state.load_signal("rx", "symbols")
+            symb_tx = state.load_signal("tx", "symbols")
             if symb_rx is None or symb_tx is None:
                 raise ValueError("missing symbols for metrics stage")
             metrics = ADAPTERS.metrics.compute(symb_rx, symb_tx, spec)
@@ -184,9 +195,9 @@ class MetricsStage(Stage):
                 }
             )
 
-        total_length_m = float(state.optical.get("total_length_m", 0.0))
+        total_length_m = float(state.stats.get("total_length_m", 0.0))
         bits_per_symbol_val = int(state.stats.get("bits_per_symbol", 1))
-        total_bits = int(state.tx.get("total_bits", 0))
+        total_bits = int(state.stats.get("total_bits", 0))
         latency_model = spec.latency_model
 
         c_m_s = 299_792_458.0
@@ -209,7 +220,7 @@ class MetricsStage(Stage):
             net_after_fec = raw_line_rate
         goodput = net_after_fec * (spec.signal.frame.payload_bits / max(total_bits, 1))
 
-        osnr_db = state.optical.get("osnr_db")
+        osnr_db = state.stats.get("osnr_db")
         summary = {
             "latency_s": {
                 "propagation": propagation_s,
@@ -238,6 +249,7 @@ class MetricsStage(Stage):
         if osnr_db is not None and osnr_db < 10.0:
             warnings.append("OSNR is low; results may be unreliable.")
         state.meta.setdefault("warnings", []).extend(warnings)
+        state.meta.setdefault("stage_timings", {})[self.name] = time.perf_counter() - start
         return StageResult(state=state)
 
 
@@ -247,6 +259,7 @@ class ArtifactsStage(Stage):
     name: str = "artifacts"
 
     def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        start = time.perf_counter()
         spec = self.cfg.spec
         if spec.outputs.artifact_level == "none":
             return StageResult(state=state)
@@ -254,91 +267,84 @@ class ArtifactsStage(Stage):
         if not spec.outputs.return_waveforms:
             return StageResult(state=state)
 
-        artifact_root = artifact_root_for_spec(str(state.meta.get("spec_hash", "unknown")))
-
         waveforms: list[tuple[str, np.ndarray | None]] = [
-            ("tx_waveform", state.tx.get("waveform")),
-            ("optical_waveform", state.optical.get("waveform")),
-            ("rx_samples", state.rx.get("samples")),
+            ("tx_waveform", state.load_signal("tx", "waveform")),
+            ("optical_waveform", state.load_signal("optical", "waveform")),
+            ("rx_samples", state.load_signal("rx", "samples")),
         ]
 
         for name, waveform in waveforms:
             if waveform is None:
                 continue
             state.artifacts.append(
-                save_npz_artifact(
-                    artifact_root,
-                    ArtifactPayload(name=name, arrays={"data": np.asarray(waveform)}),
+                state.artifact_store.save_npz_artifact(
+                    ArtifactPayload(name=name, arrays={"data": np.asarray(waveform)})
                 )
             )
 
         fs_hz = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol
-        tx_waveform = state.tx.get("waveform")
+        tx_waveform = state.load_signal("tx", "waveform")
         if tx_waveform is not None:
             freqs, psd_db = compute_psd(np.asarray(tx_waveform), fs_hz)
             if freqs.size:
                 state.artifacts.append(
-                    save_npz_artifact(
-                        artifact_root,
-                        ArtifactPayload(name="tx_psd", arrays={"freq_hz": freqs, "psd_db": psd_db}),
+                    state.artifact_store.save_npz_artifact(
+                        ArtifactPayload(name="tx_psd", arrays={"freq_hz": freqs, "psd_db": psd_db})
                     )
                 )
 
-        optical_waveform = state.optical.get("waveform")
+        optical_waveform = state.load_signal("optical", "waveform")
         if optical_waveform is not None:
             freqs, psd_db = compute_psd(np.asarray(optical_waveform), fs_hz)
             if freqs.size:
                 state.artifacts.append(
-                    save_npz_artifact(
-                        artifact_root,
+                    state.artifact_store.save_npz_artifact(
                         ArtifactPayload(
                             name="channel_psd", arrays={"freq_hz": freqs, "psd_db": psd_db}
-                        ),
+                        )
                     )
                 )
 
-        rx_samples = state.rx.get("samples")
+        rx_samples = state.load_signal("rx", "samples")
         if rx_samples is not None:
             traces = build_eye_traces(np.asarray(rx_samples), spec.runtime.samples_per_symbol)
             if traces.size:
                 state.artifacts.append(
-                    save_npz_artifact(
-                        artifact_root,
-                        ArtifactPayload(name="rx_eye", arrays={"traces": traces}),
+                    state.artifact_store.save_npz_artifact(
+                        ArtifactPayload(name="rx_eye", arrays={"traces": traces})
                     )
                 )
 
-        dsp_samples = state.rx.get("dsp_samples")
+        dsp_samples = state.load_signal("rx", "dsp_samples")
         if dsp_samples is not None:
             traces = build_eye_traces(np.asarray(dsp_samples), spec.runtime.samples_per_symbol)
             if traces.size:
                 state.artifacts.append(
-                    save_npz_artifact(
-                        artifact_root,
-                        ArtifactPayload(name="dsp_eye", arrays={"traces": traces}),
+                    state.artifact_store.save_npz_artifact(
+                        ArtifactPayload(name="dsp_eye", arrays={"traces": traces})
                     )
                 )
 
-        rx_symbols = state.rx.get("symbols")
+        rx_symbols = state.load_signal("rx", "symbols")
         if rx_symbols is not None:
             symbols = np.asarray(rx_symbols).reshape(-1)
             if symbols.size:
                 state.artifacts.append(
-                    save_npz_artifact(
-                        artifact_root,
-                        ArtifactPayload(name="dsp_constellation", arrays={"symbols": symbols}),
+                    state.artifact_store.save_npz_artifact(
+                        ArtifactPayload(name="dsp_constellation", arrays={"symbols": symbols})
                     )
                 )
 
-            phase_error = compute_phase_error(symbols, state.tx.get("symbols"))
+            tx_symbols = state.load_signal("tx", "symbols")
+            phase_error = compute_phase_error(symbols, tx_symbols)
             if phase_error.size:
                 state.artifacts.append(
-                    save_npz_artifact(
-                        artifact_root,
-                        ArtifactPayload(name="dsp_phase_error", arrays={"radians": phase_error}),
+                    state.artifact_store.save_npz_artifact(
+                        ArtifactPayload(name="dsp_phase_error", arrays={"radians": phase_error})
                     )
                 )
 
+        state.meta.setdefault("stage_timings", {})[self.name] = time.perf_counter() - start
         return StageResult(state=state)
 
 

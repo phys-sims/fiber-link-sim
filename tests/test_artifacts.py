@@ -6,7 +6,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from fiber_link_sim.artifacts import LocalArtifactStore, artifact_root_for_spec
 from fiber_link_sim.data_models.spec_models import SimulationSpec
+from fiber_link_sim.data_models.stage_models import ArtifactsSpecSlice
 from fiber_link_sim.stages.base import SimulationState
 from fiber_link_sim.stages.configs import ArtifactsStageConfig
 from fiber_link_sim.stages.core import ArtifactsStage
@@ -19,16 +21,18 @@ def _load_example(name: str) -> dict:
     return json.loads((EXAMPLE_DIR / name).read_text())
 
 
-def _build_state(spec: SimulationSpec) -> SimulationState:
+def _build_state(spec: SimulationSpec, *, root: Path) -> SimulationState:
+    store = LocalArtifactStore(artifact_root_for_spec(compute_spec_hash(spec), base_dir=root))
     state = SimulationState(
         meta={"seed": spec.runtime.seed, "spec_hash": compute_spec_hash(spec)},
+        artifact_store=store,
     )
-    state.tx["waveform"] = np.zeros(16)
-    state.tx["symbols"] = np.array([1 + 1j, -1 - 1j, 1 - 1j, -1 + 1j])
-    state.optical["waveform"] = np.ones(16)
-    state.rx["samples"] = np.full(16, 2.0)
-    state.rx["dsp_samples"] = np.full(16, 1.0)
-    state.rx["symbols"] = np.array([1 + 1j, -1 - 1j, 1 - 1j, -1 + 1j])
+    state.store_signal("tx", "waveform", np.zeros(16))
+    state.store_signal("tx", "symbols", np.array([1 + 1j, -1 - 1j, 1 - 1j, -1 + 1j]))
+    state.store_signal("optical", "waveform", np.ones(16))
+    state.store_signal("rx", "samples", np.full(16, 2.0))
+    state.store_signal("rx", "dsp_samples", np.full(16, 1.0))
+    state.store_signal("rx", "symbols", np.array([1 + 1j, -1 - 1j, 1 - 1j, -1 + 1j]))
     return state
 
 
@@ -39,8 +43,10 @@ def test_artifacts_absent_when_level_none(monkeypatch: pytest.MonkeyPatch, tmp_p
     spec_data["outputs"]["return_waveforms"] = True
     spec = SimulationSpec.model_validate(spec_data)
 
-    state = _build_state(spec)
-    stage = ArtifactsStage(cfg=ArtifactsStageConfig(spec=spec))
+    state = _build_state(spec, root=tmp_path / "artifacts")
+    stage = ArtifactsStage(
+        cfg=ArtifactsStageConfig(name="artifacts", spec=ArtifactsSpecSlice.from_spec(spec))
+    )
     stage.process(state)
 
     assert state.artifacts == []
@@ -55,8 +61,10 @@ def test_waveform_refs_present_when_requested(
     spec_data["outputs"]["return_waveforms"] = True
     spec = SimulationSpec.model_validate(spec_data)
 
-    state = _build_state(spec)
-    stage = ArtifactsStage(cfg=ArtifactsStageConfig(spec=spec))
+    state = _build_state(spec, root=tmp_path / "artifacts")
+    stage = ArtifactsStage(
+        cfg=ArtifactsStageConfig(name="artifacts", spec=ArtifactsSpecSlice.from_spec(spec))
+    )
     stage.process(state)
 
     names = {artifact["name"] for artifact in state.artifacts}
@@ -88,8 +96,10 @@ def test_artifacts_absent_when_waveforms_disabled(
     spec_data["outputs"]["return_waveforms"] = False
     spec = SimulationSpec.model_validate(spec_data)
 
-    state = _build_state(spec)
-    stage = ArtifactsStage(cfg=ArtifactsStageConfig(spec=spec))
+    state = _build_state(spec, root=tmp_path / "artifacts")
+    stage = ArtifactsStage(
+        cfg=ArtifactsStageConfig(name="artifacts", spec=ArtifactsSpecSlice.from_spec(spec))
+    )
     stage.process(state)
 
     assert state.artifacts == []

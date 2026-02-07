@@ -7,16 +7,18 @@ from optic.models import channels  # type: ignore[import-untyped]
 from fiber_link_sim.adapters.opticommpy import units
 from fiber_link_sim.adapters.opticommpy.param_builders import build_channel_params
 from fiber_link_sim.adapters.opticommpy.types import ChannelOutput
-from fiber_link_sim.data_models.spec_models import SimulationSpec
+from fiber_link_sim.data_models.stage_models import ChannelSpecSlice
+from fiber_link_sim.utils import preserve_numpy_random_state
 
 
-def run_channel(spec: SimulationSpec, signal: object, seed: int) -> ChannelOutput:
+def run_channel(spec: ChannelSpecSlice, signal: object, seed: int) -> ChannelOutput:
     param, layout = build_channel_params(spec, seed)
 
-    if spec.signal.format == "coherent_qpsk":
-        out = channels.manakovSSF(signal, param)
-    else:
-        out = channels.ssfm(signal, param)
+    with preserve_numpy_random_state(seed):
+        if spec.signal.format == "coherent_qpsk":
+            out = channels.manakovSSF(signal, param)
+        else:
+            out = channels.ssfm(signal, param)
 
     if isinstance(out, tuple):
         signal_out, params = out

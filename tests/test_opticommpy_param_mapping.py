@@ -9,6 +9,7 @@ import pytest
 from fiber_link_sim.adapters.opticommpy import units
 from fiber_link_sim.adapters.opticommpy.param_builders import build_channel_params
 from fiber_link_sim.data_models.spec_models import SimulationSpec
+from fiber_link_sim.data_models.stage_models import ChannelSpecSlice
 
 EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
 
@@ -27,7 +28,7 @@ def test_channel_params_disable_effects() -> None:
         "env_effects": False,
     }
     spec = SimulationSpec.model_validate(spec_data)
-    param, layout = build_channel_params(spec, seed=123)
+    param, layout = build_channel_params(ChannelSpecSlice.from_spec(spec), seed=123)
 
     assert param.D == 0.0
     assert param.gamma == 0.0
@@ -47,7 +48,7 @@ def test_channel_params_fixed_and_capped_gain() -> None:
     fixed_data["spans"]["amplifier"]["fixed_gain_db"] = 12.0
     fixed_data["spans"]["amplifier"].pop("max_gain_db", None)
     fixed_spec = SimulationSpec.model_validate(fixed_data)
-    fixed_param, _ = build_channel_params(fixed_spec, seed=321)
+    fixed_param, _ = build_channel_params(ChannelSpecSlice.from_spec(fixed_spec), seed=321)
 
     assert fixed_param.amp_gain_db == 12.0
     assert fixed_param.amp_mode == "fixed_gain"
@@ -56,7 +57,7 @@ def test_channel_params_fixed_and_capped_gain() -> None:
     capped_data = _load_example("qpsk_longhaul_manakov.json")
     capped_data["spans"]["amplifier"]["max_gain_db"] = 5.0
     capped_spec = SimulationSpec.model_validate(capped_data)
-    capped_param, _ = build_channel_params(capped_spec, seed=321)
+    capped_param, _ = build_channel_params(ChannelSpecSlice.from_spec(capped_spec), seed=321)
 
     assert capped_param.amp_gain_db == 5.0
     assert capped_param.amp_mode == "auto_gain"
@@ -72,7 +73,7 @@ def test_channel_params_unit_normalization() -> None:
         "env_effects": False,
     }
     spec = SimulationSpec.model_validate(spec_data)
-    param, _ = build_channel_params(spec, seed=999)
+    param, _ = build_channel_params(ChannelSpecSlice.from_spec(spec), seed=999)
 
     assert param.gamma == pytest.approx(spec.fiber.gamma_w_inv_m * 1e3)
     wavelength_m = units.wavelength_m(units.carrier_frequency_hz())

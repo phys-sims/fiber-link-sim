@@ -8,6 +8,12 @@ import pytest
 
 from fiber_link_sim.adapters.opticommpy.stages import ADAPTERS
 from fiber_link_sim.data_models.spec_models import SimulationSpec
+from fiber_link_sim.data_models.stage_models import (
+    ChannelSpecSlice,
+    DspSpecSlice,
+    RxFrontEndSpecSlice,
+    TxSpecSlice,
+)
 
 EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
 
@@ -43,23 +49,29 @@ def _small_spec(name: str) -> SimulationSpec:
 @pytest.mark.slow
 def test_adapter_chain_coherent_qpsk() -> None:
     spec = _small_spec("qpsk_longhaul_1span.json")
-    tx_out = ADAPTERS.tx.run(spec, seed=123)
+    tx_out = ADAPTERS.tx.run(TxSpecSlice.from_spec(spec), seed=123)
     assert tx_out.signal is not None
     assert tx_out.symbols.size > 0
 
-    channel_out = ADAPTERS.channel.run(spec, tx_out.signal, seed=456)
+    channel_out = ADAPTERS.channel.run(ChannelSpecSlice.from_spec(spec), tx_out.signal, seed=456)
     assert channel_out.n_spans >= 1
     assert channel_out.osnr_db is None
 
-    rx_out = ADAPTERS.rx_frontend.run(spec, np.asarray(channel_out.signal), seed=789)
+    rx_out = ADAPTERS.rx_frontend.run(
+        RxFrontEndSpecSlice.from_spec(spec), np.asarray(channel_out.signal), seed=789
+    )
     assert "lo_power_dbm" in rx_out.params
     assert rx_out.samples.size > 0
 
-    dsp_out = ADAPTERS.dsp.run(spec, rx_out.samples, spec.processing.dsp_chain)
+    dsp_out = ADAPTERS.dsp.run(
+        DspSpecSlice.from_spec(spec), rx_out.samples, spec.processing.dsp_chain
+    )
     assert dsp_out.symbols.size > 0
     assert dsp_out.hard_bits is not None
 
-    metrics_out = ADAPTERS.metrics.compute(dsp_out.symbols, tx_out.symbols, spec)
+    metrics_out = ADAPTERS.metrics.compute(
+        dsp_out.symbols, tx_out.symbols, TxSpecSlice.from_spec(spec)
+    )
     assert np.isfinite(metrics_out.pre_fec_ber)
     assert np.isfinite(metrics_out.snr_db)
     assert np.isfinite(metrics_out.evm_rms)
@@ -69,21 +81,27 @@ def test_adapter_chain_coherent_qpsk() -> None:
 @pytest.mark.slow
 def test_adapter_chain_imdd_ook() -> None:
     spec = _small_spec("ook_smoke.json")
-    tx_out = ADAPTERS.tx.run(spec, seed=222)
+    tx_out = ADAPTERS.tx.run(TxSpecSlice.from_spec(spec), seed=222)
     assert tx_out.signal is not None
     assert tx_out.symbols.size > 0
 
-    channel_out = ADAPTERS.channel.run(spec, tx_out.signal, seed=333)
+    channel_out = ADAPTERS.channel.run(ChannelSpecSlice.from_spec(spec), tx_out.signal, seed=333)
     assert channel_out.n_spans >= 1
     assert channel_out.osnr_db is None
 
-    rx_out = ADAPTERS.rx_frontend.run(spec, np.asarray(channel_out.signal), seed=444)
+    rx_out = ADAPTERS.rx_frontend.run(
+        RxFrontEndSpecSlice.from_spec(spec), np.asarray(channel_out.signal), seed=444
+    )
     assert "pd_bandwidth_hz" in rx_out.params
     assert rx_out.samples.size > 0
 
-    dsp_out = ADAPTERS.dsp.run(spec, rx_out.samples, spec.processing.dsp_chain)
+    dsp_out = ADAPTERS.dsp.run(
+        DspSpecSlice.from_spec(spec), rx_out.samples, spec.processing.dsp_chain
+    )
     assert dsp_out.symbols.size > 0
     assert dsp_out.hard_bits is not None
 
-    metrics_out = ADAPTERS.metrics.compute(dsp_out.symbols, tx_out.symbols, spec)
+    metrics_out = ADAPTERS.metrics.compute(
+        dsp_out.symbols, tx_out.symbols, TxSpecSlice.from_spec(spec)
+    )
     assert np.isfinite(metrics_out.pre_fec_ber)

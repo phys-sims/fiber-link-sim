@@ -3,6 +3,7 @@ from __future__ import annotations
 from math import isclose
 
 from fiber_link_sim.data_models.spec_models import SimulationSpec
+from fiber_link_sim.data_models.stage_models import MetricsSpecSlice
 from fiber_link_sim.stages.base import SimulationState
 from fiber_link_sim.stages.configs import MetricsStageConfig
 from fiber_link_sim.stages.core import MetricsStage
@@ -73,14 +74,16 @@ def test_latency_model_breakdown_exact() -> None:
         }
     )
     state = SimulationState()
-    state.optical["total_length_m"] = 1000.0
-    state.tx["total_bits"] = 80
+    state.stats["total_length_m"] = 1000.0
+    state.stats["total_bits"] = 80
     state.stats["bits_per_symbol"] = 2
     state.stats["pre_fec_ber"] = 0.0
     state.stats["snr_db"] = 0.0
     state.stats["evm_rms"] = 0.0
 
-    stage = MetricsStage(cfg=MetricsStageConfig(spec=spec))
+    stage = MetricsStage(
+        cfg=MetricsStageConfig(name="metrics", spec=MetricsSpecSlice.from_spec(spec))
+    )
     result = stage.process(state)
     latency = result.state.stats["summary"]["latency_s"]
 

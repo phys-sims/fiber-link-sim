@@ -7,7 +7,12 @@ import numpy as np
 from optic.utils import parameters  # type: ignore[import-untyped]
 
 from fiber_link_sim.adapters.opticommpy import units
-from fiber_link_sim.data_models.spec_models import SimulationSpec
+from fiber_link_sim.data_models.stage_models import (
+    ChannelSpecSlice,
+    DspSpecSlice,
+    RxFrontEndSpecSlice,
+    TxSpecSlice,
+)
 from fiber_link_sim.utils import total_link_length_m
 
 
@@ -18,7 +23,7 @@ class ChannelLayout:
     n_spans: int
 
 
-def _channel_layout(spec: SimulationSpec) -> ChannelLayout:
+def _channel_layout(spec: ChannelSpecSlice) -> ChannelLayout:
     total_length_km = total_link_length_m(spec.path) / 1000.0
     if spec.spans.mode == "from_path_segments":
         n_spans = max(len(spec.path.segments), 1)
@@ -39,11 +44,11 @@ def _beta2_to_dispersion(beta2_s2_per_m: float, fc_hz: float) -> float:
     return dispersion_s_per_m2 * 1e6
 
 
-def _span_loss_db(spec: SimulationSpec, layout: ChannelLayout) -> float:
+def _span_loss_db(spec: ChannelSpecSlice, layout: ChannelLayout) -> float:
     return spec.fiber.alpha_db_per_km * layout.span_length_km
 
 
-def _amplifier_gain_db(spec: SimulationSpec, span_loss_db: float) -> float:
+def _amplifier_gain_db(spec: ChannelSpecSlice, span_loss_db: float) -> float:
     if spec.spans.amplifier.type == "none":
         return 0.0
     if spec.spans.amplifier.mode == "auto_gain":
@@ -55,7 +60,7 @@ def _amplifier_gain_db(spec: SimulationSpec, span_loss_db: float) -> float:
 
 
 def build_tx_params(
-    spec: SimulationSpec, seed: int, format_tag: Literal["coherent", "pam"]
+    spec: TxSpecSlice, seed: int, format_tag: Literal["coherent", "pam"]
 ) -> parameters:
     param = parameters()
     param.seed = seed
@@ -95,7 +100,7 @@ def build_tx_params(
     return param
 
 
-def build_channel_params(spec: SimulationSpec, seed: int) -> tuple[parameters, ChannelLayout]:
+def build_channel_params(spec: ChannelSpecSlice, seed: int) -> tuple[parameters, ChannelLayout]:
     param = parameters()
     layout = _channel_layout(spec)
     param.Ltotal = layout.total_length_km
@@ -137,7 +142,7 @@ def build_channel_params(spec: SimulationSpec, seed: int) -> tuple[parameters, C
     return param, layout
 
 
-def build_lo_params(spec: SimulationSpec, seed: int, n_samples: int) -> parameters:
+def build_lo_params(spec: RxFrontEndSpecSlice, seed: int, n_samples: int) -> parameters:
     param = parameters()
     param.P = spec.transceiver.tx.launch_power_dbm
     param.lw = spec.transceiver.rx.lo_linewidth_hz
@@ -147,7 +152,7 @@ def build_lo_params(spec: SimulationSpec, seed: int, n_samples: int) -> paramete
     return param
 
 
-def build_pd_params(spec: SimulationSpec, seed: int) -> parameters:
+def build_pd_params(spec: RxFrontEndSpecSlice, seed: int) -> parameters:
     param = parameters()
     param.Fs = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol
     param.B = spec.signal.symbol_rate_baud / 2
@@ -166,7 +171,7 @@ def build_resample_params(in_fs: float, out_fs: float) -> parameters:
     return param
 
 
-def build_edc_params(spec: SimulationSpec) -> parameters:
+def build_edc_params(spec: DspSpecSlice) -> parameters:
     param = parameters()
     param.L = total_link_length_m(spec.path) / 1000.0
     param.D = _beta2_to_dispersion(spec.fiber.beta2_s2_per_m, units.carrier_frequency_hz())
@@ -175,7 +180,7 @@ def build_edc_params(spec: SimulationSpec) -> parameters:
     return param
 
 
-def build_mimo_eq_params(spec: SimulationSpec, taps: int, mu: float) -> parameters:
+def build_mimo_eq_params(spec: DspSpecSlice, taps: int, mu: float) -> parameters:
     param = parameters()
     param.nTaps = taps
     param.mu = [mu]

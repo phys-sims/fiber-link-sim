@@ -9,6 +9,7 @@ from optic.comm import modulation  # type: ignore[import-untyped]
 
 from fiber_link_sim.adapters.opticommpy.dsp import run_dsp_chain
 from fiber_link_sim.data_models.spec_models import DspBlock, SimulationSpec
+from fiber_link_sim.data_models.stage_models import DspSpecSlice
 
 EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
 
@@ -24,7 +25,9 @@ def test_demap_outputs_hard_bits_and_llrs() -> None:
     spec = _load_spec()
     constellation = modulation.grayMapping(4, "psk")
     samples = np.tile(constellation, 16)
-    dsp_out = run_dsp_chain(spec, samples, [DspBlock(name="demap", params={"soft": True})])
+    dsp_out = run_dsp_chain(
+        DspSpecSlice.from_spec(spec), samples, [DspBlock(name="demap", params={"soft": True})]
+    )
     assert dsp_out.hard_bits is not None
     assert dsp_out.llrs is not None
     assert dsp_out.hard_bits.size == samples.size * 2
@@ -36,7 +39,9 @@ def test_demap_hard_bits_without_llrs() -> None:
     spec = _load_spec()
     constellation = modulation.grayMapping(4, "psk")
     samples = np.tile(constellation, 8)
-    dsp_out = run_dsp_chain(spec, samples, [DspBlock(name="demap", params={"soft": False})])
+    dsp_out = run_dsp_chain(
+        DspSpecSlice.from_spec(spec), samples, [DspBlock(name="demap", params={"soft": False})]
+    )
     assert dsp_out.hard_bits is not None
     assert dsp_out.llrs is None
     assert dsp_out.hard_bits.size == samples.size * 2
