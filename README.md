@@ -67,7 +67,7 @@ pip install -e .
 Fast tests (default in pytest config):
 
 ```bash
-pytest -m "not slow" --durations=10
+pytest -m "not slow" --durations=10 --cov=fiber_link_sim --cov-report=term-missing:skip-covered
 ```
 
 Slow tests only:
@@ -84,3 +84,9 @@ pytest
 
 Note: pytest defaults to `-m "not slow" --durations=10`. To include slow tests in the full
 suite, run `pytest -m "slow or not slow" --durations=10`.
+
+Coverage (fast suite only):
+
+```bash
+pytest -m "not slow" --durations=10 --cov=fiber_link_sim --cov-report=term-missing:skip-covered
+```

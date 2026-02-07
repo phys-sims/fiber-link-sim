@@ -21,6 +21,7 @@ fiber-link-sim = "fiber_link_sim.cli:main"
 dev = [
   # test & tooling you actually run locally
   "pytest",
+  "pytest-cov",
   "black",
   "ruff",
   "mypy",
@@ -83,3 +84,12 @@ ignore-words-list = "teh,nd,ser"
 skip = "poetry.lock,*.lock,*.svg,*.png,*.jpg"
 # You can also narrow paths if needed:
 # path = "src,tests,docs,examples"
+
+# --- coverage ---
+[tool.coverage.run]
+branch = true
+source = ["fiber_link_sim"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
