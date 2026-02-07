@@ -35,11 +35,14 @@ Key references for deeper details live in:
 
 ## How this differs from OptiCommPy
 
-OptiCommPy provides the underlying physics and DSP building blocks. This repo layers on:
+OptiCommPy provides the underlying physics and DSP building blocks. This repo focuses on the
+integration gap between those primitives and a repeatable, end-to-end link simulation. In
+practice, it provides:
 
 * **A stable contract** (`SimulationSpec → SimulationResult`) for external orchestration tools.
 * **Deterministic, pipeline-based composition** so stages can be swapped without changing the spec.
 * **Cross-stage metadata, provenance, and artifacts** to make runs reproducible and traceable.
+* **Plain-language documentation** of stages and flags so the stack is transparent, not a black box.
 
 In short: OptiCommPy is the physics toolkit; this repo is the deterministic, versioned simulator
 core that wires those blocks into a repeatable end-to-end link model.
