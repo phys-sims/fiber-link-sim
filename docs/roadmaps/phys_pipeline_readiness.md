@@ -15,18 +15,41 @@ It focuses on **interfaces, determinism, and state/caching semantics** without c
 
 **Deliverables**
 
-- [ ] **State layout alignment doc:** confirm `SimulationState` sections match the recommended shape
-      (meta/refs/signals/rx/stats) and document any deviations.
-- [ ] **StageConfig minimality checklist:** enumerate which `SimulationSpec` slices each stage truly needs
-      (Tx, Channel, Rx, DSP, FEC, Metrics, Artifacts).
-- [ ] **Determinism map:** list all RNG usage sites (including third-party/OptiCommPy) and confirm no global RNG
-      mutations remain.
+- [x] **State layout alignment doc (current snapshot):** `SimulationState` currently contains
+      `meta`, `tx`, `optical`, `rx`, `stats`, `artifacts`, `rng` and hashes `meta/tx/optical/rx/stats` only.
+      **Deviations from target shape**: no explicit `refs` or `signals` sections, and large arrays
+      (waveforms/samples/symbols) are stored directly under `tx/optical/rx`. **Proposed mapping**:
+      - `meta` → `meta` (no change)
+      - `tx`/`optical`/`rx` waveforms/samples → `signals` (with refs where possible)
+      - `artifacts` → `refs` (keep artifact metadata + ref URIs)
+      - `stats` → `stats` (no change)
+      - `rng` → move out of hashable state or into `meta.rng_seed` only
+- [x] **StageConfig minimality checklist (current snapshot):**
+      - **TxStage** needs `runtime` (n_symbols, samples_per_symbol), `signal` (format, rolloff, n_pol, symbol_rate),
+        `transceiver.tx` (launch_power_dbm, laser_linewidth_hz).
+      - **ChannelStage** needs `path`, `spans`, `fiber`, `propagation` (effects + ssfm dz), `signal` (symbol_rate),
+        `runtime.samples_per_symbol`, `transceiver.tx` (launch_power_dbm).
+      - **RxFrontEndStage** needs `signal` (symbol_rate), `runtime.samples_per_symbol`, `transceiver.rx` (noise/LO),
+        `transceiver.tx` (launch_power_dbm).
+      - **DSPStage** needs `processing.dsp_chain`, `signal`, `runtime.samples_per_symbol`, and `fiber` (EDC params).
+      - **FECStage** needs `processing.fec`, `signal` (format), `runtime` (n_symbols) for fallback metrics.
+      - **MetricsStage** needs `signal`, `runtime`, `latency_model`, `processing.fec`, `fiber`, `path`.
+      - **ArtifactsStage** needs `outputs` (artifact_level, return_waveforms), `runtime.samples_per_symbol`,
+        `signal.symbol_rate_baud`.
+      - **Current gap**: StageConfig classes still hold the full `SimulationSpec`.
+- [x] **Determinism map (current snapshot):**
+      - **Safe (local RNG)**: `SimulationState.stage_rng` derives a per-stage RNG from `meta.seed`.
+      - **Unsafe (global RNG)**: `np.random.seed(...)` in `DSPStage` and OptiCommPy adapters
+        (Tx/Channel/Rx Frontend) mutates global state.
+      - **Third-party RNG**: OptiCommPy calls rely on `np.random.seed` for repeatability.
+      - **Next action**: eliminate all global RNG usage and pass RNG objects or deterministic seeds
+        through adapter calls.
 
 **Acceptance criteria**
 
-- A short doc note in this roadmap listing current state fields and planned renames or aliases (if any).
-- A one-page checklist mapping spec slices to stage configs (inputs only).
-- All RNG usage sites are enumerated and tagged as safe/unsafe for scheduled execution.
+- ✅ A short doc note in this roadmap listing current state fields and planned renames or aliases (if any).
+- ✅ A one-page checklist mapping spec slices to stage configs (inputs only).
+- ✅ All RNG usage sites are enumerated and tagged as safe/unsafe for scheduled execution.
 
 ## Phase 1 — Cache-ready State & Configs (near-term)
 
@@ -111,7 +134,7 @@ It focuses on **interfaces, determinism, and state/caching semantics** without c
 
 ## Tracking checklist
 
-- [ ] Phase 0 complete
+- [x] Phase 0 complete
 - [ ] Phase 1 complete
 - [ ] Phase 2 complete
 - [ ] Phase 3 complete
