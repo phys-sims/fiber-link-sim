@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from contextlib import contextmanager
+from collections.abc import Generator
 
 import numpy as np
 
@@ -21,6 +23,18 @@ def derive_stage_rng(seed: int, stage_name: str) -> np.random.Generator:
     digest = hashlib.sha256(f"{seed}-{stage_name}".encode()).digest()
     seed_int = int.from_bytes(digest[:8], "big")
     return np.random.default_rng(seed_int)
+
+
+@contextmanager
+def preserve_numpy_random_state(seed: int | None = None) -> Generator[np.random.RandomState, None, None]:
+    state = np.random.get_state()
+    if seed is not None:
+        seeded = np.random.RandomState(seed)
+        np.random.set_state(seeded.get_state())
+    try:
+        yield np.random.mtrand._rand
+    finally:
+        np.random.set_state(state)
 
 
 def total_link_length_m(path: Path) -> float:

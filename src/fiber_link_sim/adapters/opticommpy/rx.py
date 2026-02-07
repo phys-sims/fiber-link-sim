@@ -10,10 +10,10 @@ from fiber_link_sim.adapters.opticommpy.param_builders import (
     build_resample_params,
 )
 from fiber_link_sim.adapters.opticommpy.types import RxOutput
-from fiber_link_sim.data_models.spec_models import SimulationSpec
+from fiber_link_sim.data_models.stage_models import RxFrontEndSpecSlice
 
 
-def run_rx_frontend(spec: SimulationSpec, signal: np.ndarray, seed: int) -> RxOutput:
+def run_rx_frontend(spec: RxFrontEndSpecSlice, signal: np.ndarray, seed: int) -> RxOutput:
     if spec.transceiver.rx.coherent:
         lo_param = build_lo_params(spec, seed, signal.shape[0])
         lo = devices.basicLaserModel(lo_param)
@@ -35,7 +35,7 @@ def run_rx_frontend(spec: SimulationSpec, signal: np.ndarray, seed: int) -> RxOu
 
 
 def apply_adc(
-    spec: SimulationSpec, samples: np.ndarray
+    spec: RxFrontEndSpecSlice, samples: np.ndarray
 ) -> tuple[np.ndarray, dict[str, float | bool]]:
     in_fs = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol
     out_fs = spec.transceiver.rx.adc.sample_rate_hz

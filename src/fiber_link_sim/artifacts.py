@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
+from phys_pipeline.types import hash_ndarray  # type: ignore[import-untyped]
 
 
 @dataclass(frozen=True, slots=True)
@@ -13,24 +15,135 @@ class ArtifactPayload:
     arrays: dict[str, np.ndarray]
 
 
-def artifact_root_for_spec(spec_hash: str) -> Path:
-    root = Path("artifacts") / spec_hash
+@dataclass(frozen=True, slots=True)
+class BlobPayload:
+    name: str
+    array: np.ndarray
+    role: str
+    units: str | None = None
+
+
+class ArtifactStore(Protocol):
+    def write_blob(self, payload: BlobPayload) -> dict[str, Any]: ...
+
+    def read_blob(self, ref: str) -> np.ndarray: ...
+
+    def save_npz_artifact(self, payload: ArtifactPayload) -> dict[str, Any]: ...
+
+    def save_json_artifact(self, name: str, payload: dict[str, Any]) -> dict[str, Any]: ...
+
+
+@dataclass(slots=True)
+class InMemoryArtifactStore:
+    blobs: dict[str, np.ndarray] = field(default_factory=dict)
+
+    def write_blob(self, payload: BlobPayload) -> dict[str, Any]:
+        array = np.asarray(payload.array)
+        digest = hash_ndarray(array).hex()
+        ref = f"blob://memory/{payload.name}-{digest}.npz"
+        self.blobs[ref] = array
+        return {
+            "ref": ref,
+            "name": payload.name,
+            "type": "npz",
+            "mime": "application/octet-stream",
+            "bytes": int(array.nbytes),
+            "shape": list(array.shape),
+            "dtype": str(array.dtype),
+            "role": payload.role,
+            "units": payload.units,
+        }
+
+    def read_blob(self, ref: str) -> np.ndarray:
+        return np.asarray(self.blobs[ref])
+
+    def save_npz_artifact(self, payload: ArtifactPayload) -> dict[str, Any]:
+        arrays = {key: np.asarray(value) for key, value in payload.arrays.items()}
+        ref = f"artifact://memory/{payload.name}.npz"
+        self.blobs[ref] = arrays["data"] if "data" in arrays else np.asarray([])
+        return {
+            "name": payload.name,
+            "type": "npz",
+            "ref": ref,
+            "mime": "application/octet-stream",
+            "bytes": int(sum(arr.nbytes for arr in arrays.values())),
+        }
+
+    def save_json_artifact(self, name: str, payload: dict[str, Any]) -> dict[str, Any]:
+        ref = f"artifact://memory/{name}.json"
+        self.blobs[ref] = np.asarray([])
+        return {
+            "name": name,
+            "type": "json",
+            "ref": ref,
+            "mime": "application/json",
+            "bytes": None,
+        }
+
+
+@dataclass(slots=True)
+class LocalArtifactStore:
+    root: Path
+
+    def __post_init__(self) -> None:
+        self.root.mkdir(parents=True, exist_ok=True)
+        (self.root / "blobs").mkdir(parents=True, exist_ok=True)
+
+    def write_blob(self, payload: BlobPayload) -> dict[str, Any]:
+        array = np.asarray(payload.array)
+        digest = hash_ndarray(array).hex()
+        filename = f"{payload.name}-{digest}.npz"
+        path = self.root / "blobs" / filename
+        np.savez_compressed(path, data=array)
+        return {
+            "ref": f"blob://{self.root.name}/blobs/{filename}",
+            "name": payload.name,
+            "type": "npz",
+            "mime": "application/octet-stream",
+            "bytes": path.stat().st_size,
+            "shape": list(array.shape),
+            "dtype": str(array.dtype),
+            "role": payload.role,
+            "units": payload.units,
+        }
+
+    def read_blob(self, ref: str) -> np.ndarray:
+        relative = ref.replace("blob://", "")
+        path = self.root.parent / relative
+        with np.load(path) as data:
+            return np.asarray(data["data"])
+
+    def save_npz_artifact(self, payload: ArtifactPayload) -> dict[str, Any]:
+        filename = f"{payload.name}.npz"
+        path = self.root / filename
+        arrays = {key: np.asarray(value) for key, value in payload.arrays.items()}
+        np.savez_compressed(path, **arrays)  # type: ignore[arg-type]
+        return {
+            "name": payload.name,
+            "type": "npz",
+            "ref": f"artifact://{self.root.name}/{filename}",
+            "mime": "application/octet-stream",
+            "bytes": path.stat().st_size,
+        }
+
+    def save_json_artifact(self, name: str, payload: dict[str, Any]) -> dict[str, Any]:
+        filename = f"{name}.json"
+        path = self.root / filename
+        path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+        return {
+            "name": name,
+            "type": "json",
+            "ref": f"artifact://{self.root.name}/{filename}",
+            "mime": "application/json",
+            "bytes": path.stat().st_size,
+        }
+
+
+def artifact_root_for_spec(spec_hash: str, base_dir: Path | None = None) -> Path:
+    root_dir = base_dir or Path("artifacts")
+    root = root_dir / spec_hash
     root.mkdir(parents=True, exist_ok=True)
     return root
-
-
-def save_npz_artifact(artifact_root: Path, payload: ArtifactPayload) -> dict[str, Any]:
-    filename = f"{payload.name}.npz"
-    path = artifact_root / filename
-    arrays = {key: np.asarray(value) for key, value in payload.arrays.items()}
-    np.savez_compressed(path, **arrays)  # type: ignore[arg-type]
-    return {
-        "name": payload.name,
-        "type": "npz",
-        "ref": f"artifact://{artifact_root.name}/{filename}",
-        "mime": "application/octet-stream",
-        "bytes": path.stat().st_size,
-    }
 
 
 def compute_psd(signal: np.ndarray, fs_hz: float) -> tuple[np.ndarray, np.ndarray]:

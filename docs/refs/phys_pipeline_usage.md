@@ -26,42 +26,39 @@ compatibility with phys-pipeline optimizers and caching tools.
 **Rule:** the *type* of State stays constant across stages; fields are gradually populated.
 
 Recommended conceptual structure:
-- `meta`: seed, run id, spec hash, bookkeeping
-- `tx`: bits/symbols references + framing metadata
-- `optical`: references to optical-domain signals (field/waveform)
-- `rx`: sampled electrical signals, decisions, LLRs
-- `metrics`: optional running diagnostics
+- `meta`: seed, run id, spec hash, stage timing, bookkeeping
+- `refs`: metadata for blob/artifact references (shape, dtype, role, units)
+- `signals`: reference map for signal arrays (tx/optical/rx waveforms, symbols)
+- `rx`: non-signal receive outputs (frontend params, decisions/LLRs refs)
+- `stats`: scalar metrics and intermediate counters
 - `artifacts`: artifact references produced so far
 
 ### Arrays vs references (critical for caching)
 
-**MVP approach:** State holds numpy arrays directly.
-- Pros: simplest, fastest to implement
-- Cons: large objects make hashing/caching expensive and brittle
-
-**Recommended approach:** State holds *BlobRef* strings, not arrays.
-- Store arrays as NPZ (or recorder-backed artifacts).
-- State contains refs like `artifact://run/<id>/rx_samples.npz`.
+**Reference-first approach (current):** State holds *BlobRef* strings, not arrays.
+- Store arrays as NPZ blobs (via the artifact store).
+- State contains refs like `blob://<spec_hash>/blobs/rx_samples-<digest>.npz`.
 - Stages load by ref when needed.
 
-This keeps State small and hashable, allowing stage-level caching to work as intended.
+This keeps State small and hashable, allowing stage-level caching to work as intended while keeping
+large arrays out of hashable payloads.
 
 ## Mapping `SimulationSpec` → StageConfigs
 
-- TxStageConfig <- `signal`, `transceiver.tx`
-- FiberStageConfig <- `path`, `fiber`, `spans`, `propagation`
-- RxStageConfig <- `transceiver.rx`
-- DSPStageConfig <- `processing.dsp_chain`
-- FECStageConfig <- `processing.fec`
-- MetricsStageConfig <- `outputs` + latency accounting rules
-- ArtifactsStageConfig <- `outputs`
+- TxStageConfig <- `runtime`, `signal`, `transceiver`
+- ChannelStageConfig <- `path`, `fiber`, `spans`, `propagation`, `signal`, `runtime`, `transceiver`
+- RxFrontEndStageConfig <- `signal`, `runtime`, `transceiver`
+- DSPStageConfig <- `processing`, `signal`, `runtime`, `fiber`, `path`
+- FECStageConfig <- `processing`, `signal`
+- MetricsStageConfig <- `signal`, `runtime`, `latency_model`, `processing`, `fiber`, `path`
+- ArtifactsStageConfig <- `outputs`, `runtime`, `signal`
 
 ## Determinism
 
-All randomness must be derived from `runtime.seed`. The pipeline initializes a **root RNG** seeded by `runtime.seed`
-and stores it in State (`state.rng`) for traceability. Each stage derives a deterministic stage RNG (e.g., hashing
+All randomness must be derived from `runtime.seed`. Each stage derives a deterministic stage RNG (e.g., hashing
 `<seed>-<stage name>`) so stage-level randomness is independent but reproducible. If noise is enabled (ASE, thermal,
-shot), the same spec+seed must reproduce identical results.
+shot), the same spec+seed must reproduce identical results. Adapter calls use a temporary RNG context so global
+NumPy RNG state is preserved after each stage.
 
 ## Artifacts vs metrics
 
@@ -75,12 +72,14 @@ Artifacts are emitted by **ArtifactsStage** after the main pipeline stages have 
 - **RxFrontEndStage** → eye diagram (`rx_eye`)
 - **DSPStage** → constellation, phase error, DSP eye (`dsp_constellation`, `dsp_phase_error`, `dsp_eye`)
 
+The artifact store also writes a **run manifest** (`run_manifest.json`) when artifacts are enabled. The manifest
+captures stage timings, blob reference metadata, and artifact refs to support sim-utils ingestion and caching.
+
 ## Suggested repo layout (src-style)
 
-- `src/fiber_physics/`
-  - `spec_models.py` (Pydantic models + schema export)
+- `src/fiber_link_sim/`
+  - `data_models/` (Pydantic models + stage slices)
   - `schema/` (authoritative JSON schemas)
   - `stages/` (phys-pipeline stages)
   - `simulate.py` (`simulate(spec)->result`)
-- `schema/` (human-facing mirror + examples)
 - `docs/` (context + usage)

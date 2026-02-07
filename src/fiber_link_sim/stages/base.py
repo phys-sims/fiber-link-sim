@@ -14,23 +14,25 @@ from phys_pipeline import (  # type: ignore[import-untyped]
 )
 from phys_pipeline.types import hash_ndarray, hash_small  # type: ignore[import-untyped]
 
+from fiber_link_sim.artifacts import ArtifactStore, BlobPayload, InMemoryArtifactStore
+
 
 @dataclass(slots=True)
 class SimulationState(State):
     meta: dict[str, Any] = field(default_factory=dict)
-    tx: dict[str, Any] = field(default_factory=dict)
-    optical: dict[str, Any] = field(default_factory=dict)
+    refs: dict[str, dict[str, Any]] = field(default_factory=dict)
+    signals: dict[str, dict[str, str]] = field(default_factory=dict)
     rx: dict[str, Any] = field(default_factory=dict)
     stats: dict[str, Any] = field(default_factory=dict)
     artifacts: list[dict[str, Any]] = field(default_factory=list)
-    rng: np.random.Generator | None = None
+    artifact_store: ArtifactStore = field(default_factory=InMemoryArtifactStore)
 
     def deepcopy(self) -> SimulationState:
         return copy.deepcopy(self)
 
     def hashable_repr(self) -> bytes:
         h = hashlib.sha256()
-        for payload in (self.meta, self.tx, self.optical, self.rx, self.stats):
+        for payload in (self.meta, self.refs, self.signals, self.rx, self.stats):
             h.update(_hash_payload(payload))
         return h.digest()
 
@@ -39,6 +41,42 @@ class SimulationState(State):
 
         seed = int(self.meta.get("seed", 0))
         return derive_stage_rng(seed, stage_name)
+
+    def store_blob(
+        self,
+        name: str,
+        array: np.ndarray,
+        *,
+        role: str,
+        units: str | None = None,
+    ) -> str:
+        payload = self.artifact_store.write_blob(
+            BlobPayload(name=name, array=np.asarray(array), role=role, units=units)
+        )
+        ref = payload["ref"]
+        self.refs[ref] = payload
+        return ref
+
+    def store_signal(
+        self,
+        section: str,
+        name: str,
+        array: np.ndarray,
+        *,
+        units: str | None = None,
+    ) -> str:
+        ref = self.store_blob(name, array, role=f"signal:{section}", units=units)
+        self.signals.setdefault(section, {})[name] = ref
+        return ref
+
+    def load_ref(self, ref: str) -> np.ndarray:
+        return np.asarray(self.artifact_store.read_blob(ref))
+
+    def load_signal(self, section: str, name: str) -> np.ndarray | None:
+        ref = self.signals.get(section, {}).get(name)
+        if ref is None:
+            return None
+        return self.load_ref(ref)
 
 
 class Stage(PipelineStage[SimulationState, StageConfig]):

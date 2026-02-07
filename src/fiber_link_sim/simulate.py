@@ -9,6 +9,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from fiber_link_sim.artifacts import LocalArtifactStore, artifact_root_for_spec
 from fiber_link_sim.data_models.spec_models import (
     Artifact,
     ErrorInfo,
@@ -19,7 +20,7 @@ from fiber_link_sim.data_models.spec_models import (
 )
 from fiber_link_sim.pipeline import build_pipeline
 from fiber_link_sim.stages.base import SimulationState
-from fiber_link_sim.utils import compute_spec_hash, create_root_rng
+from fiber_link_sim.utils import compute_spec_hash
 
 SIM_VERSION = "0.1.0"
 _SIMULATION_CACHE: dict[tuple[str, int], SimulationResult] = {}
@@ -117,13 +118,14 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
             ),
         )
 
+    artifact_store = LocalArtifactStore(artifact_root_for_spec(spec_hash))
     state = SimulationState(
         meta={
             "seed": spec_model.runtime.seed,
             "spec_hash": spec_hash,
             "version": SIM_VERSION,
         },
-        rng=create_root_rng(spec_model.runtime.seed),
+        artifact_store=artifact_store,
     )
 
     pipeline = build_pipeline(spec_model)
@@ -205,6 +207,19 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
     artifacts = state.artifacts
     summary_payload = state.stats.get("summary")
     summary = Summary.model_validate(summary_payload) if summary_payload else None
+
+    if spec_model.outputs.artifact_level != "none":
+        manifest = {
+            "version": "v1",
+            "spec_hash": spec_hash,
+            "seed": spec_model.runtime.seed,
+            "sim_version": SIM_VERSION,
+            "pipeline": "fiber_link_sim",
+            "stage_timings_s": state.meta.get("stage_timings", {}),
+            "refs": list(state.refs.values()),
+            "artifacts": artifacts,
+        }
+        artifacts.append(state.artifact_store.save_json_artifact("run_manifest", manifest))
 
     result = SimulationResult(
         v=spec_model.v,

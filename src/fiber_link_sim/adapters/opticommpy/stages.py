@@ -19,20 +19,30 @@ from fiber_link_sim.adapters.opticommpy.types import (
     RxOutput,
     TxOutput,
 )
-from fiber_link_sim.data_models.spec_models import DspBlock, SimulationSpec
+from fiber_link_sim.data_models.spec_models import DspBlock
+from fiber_link_sim.data_models.stage_models import (
+    ChannelSpecSlice,
+    DspSpecSlice,
+    FecSpecSlice,
+    RxFrontEndSpecSlice,
+    SignalSpec,
+    TxSpecSlice,
+)
+from fiber_link_sim.utils import preserve_numpy_random_state
 
 
 @dataclass(slots=True)
 class TxAdapter:
-    def run(self, spec: SimulationSpec, seed: int) -> TxOutput:
-        np.random.seed(seed)
+    def run(self, spec: TxSpecSlice, seed: int) -> TxOutput:
         if spec.signal.format == "coherent_qpsk":
             param = build_tx_params(spec, seed, "coherent")
-            signal, symbols, param_out = opti_tx.simpleWDMTx(param)
+            with preserve_numpy_random_state(seed):
+                signal, symbols, param_out = opti_tx.simpleWDMTx(param)
             return TxOutput(signal=signal, symbols=symbols, params=param_out)
 
         param = build_tx_params(spec, seed, "pam")
-        signal, symbols, param_out = opti_tx.pamTransmitter(param)
+        with preserve_numpy_random_state(seed):
+            signal, symbols, param_out = opti_tx.pamTransmitter(param)
         if isinstance(param_out, np.ndarray):
             raise ValueError("unexpected PAM transmitter output signature")
         return TxOutput(signal=signal, symbols=symbols, params=param_out)
@@ -40,14 +50,14 @@ class TxAdapter:
 
 @dataclass(slots=True)
 class ChannelAdapter:
-    def run(self, spec: SimulationSpec, signal: object, seed: int) -> ChannelOutput:
-        np.random.seed(seed)
+    def run(self, spec: ChannelSpecSlice, signal: object, seed: int) -> ChannelOutput:
         param, layout = build_channel_params(spec, seed)
 
-        if spec.signal.format == "coherent_qpsk":
-            out = channels.manakovSSF(signal, param)
-        else:
-            out = channels.ssfm(signal, param)
+        with preserve_numpy_random_state(seed):
+            if spec.signal.format == "coherent_qpsk":
+                out = channels.manakovSSF(signal, param)
+            else:
+                out = channels.ssfm(signal, param)
 
         if isinstance(out, tuple):
             signal_out, params = out
@@ -86,14 +96,14 @@ class ChannelAdapter:
 
 @dataclass(slots=True)
 class RxFrontEndAdapter:
-    def run(self, spec: SimulationSpec, signal: np.ndarray, seed: int) -> RxOutput:
-        np.random.seed(seed)
-        return run_rx_frontend(spec, signal, seed)
+    def run(self, spec: RxFrontEndSpecSlice, signal: np.ndarray, seed: int) -> RxOutput:
+        with preserve_numpy_random_state(seed):
+            return run_rx_frontend(spec, signal, seed)
 
 
 @dataclass(slots=True)
 class DSPAdapter:
-    def run(self, spec: SimulationSpec, samples: np.ndarray, blocks: list[DspBlock]) -> DspOutput:
+    def run(self, spec: DspSpecSlice, samples: np.ndarray, blocks: list[DspBlock]) -> DspOutput:
         return run_dsp_chain(spec, samples, blocks)
 
 
@@ -101,7 +111,7 @@ class DSPAdapter:
 class FECAdapter:
     def run(
         self,
-        spec: SimulationSpec,
+        spec: FecSpecSlice,
         tx_symbols: np.ndarray,
         llrs: np.ndarray | None,
         hard_bits: np.ndarray | None,
@@ -123,9 +133,7 @@ class FECAdapter:
 
 @dataclass(slots=True)
 class MetricsAdapter:
-    def compute(
-        self, symb_rx: np.ndarray, symb_tx: np.ndarray, spec: SimulationSpec
-    ) -> MetricsOutput:
+    def compute(self, symb_rx: np.ndarray, symb_tx: np.ndarray, spec: SignalSpec) -> MetricsOutput:
         return compute_metrics(symb_rx, symb_tx, spec.signal)
 
 

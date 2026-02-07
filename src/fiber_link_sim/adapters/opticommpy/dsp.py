@@ -16,7 +16,8 @@ from fiber_link_sim.adapters.opticommpy.param_builders import (
     build_resample_params,
 )
 from fiber_link_sim.adapters.opticommpy.types import DspOutput
-from fiber_link_sim.data_models.spec_models import DspBlock, DSPBlockName, SimulationSpec
+from fiber_link_sim.data_models.spec_models import DspBlock, DSPBlockName
+from fiber_link_sim.data_models.stage_models import DspSpecSlice
 
 _DSP_BLOCKS = {
     "resample",
@@ -39,7 +40,7 @@ _DEFAULT_COHERENT_CHAIN: tuple[DSPBlockName, ...] = (
 _DEFAULT_IMDD_CHAIN: tuple[DSPBlockName, ...] = ("resample", "matched_filter", "ffe", "demap")
 
 
-def resolve_dsp_chain(spec: SimulationSpec, blocks: list[DspBlock]) -> list[DspBlock]:
+def resolve_dsp_chain(spec: DspSpecSlice, blocks: list[DspBlock]) -> list[DspBlock]:
     if blocks:
         chain = list(blocks)
     else:
@@ -81,7 +82,7 @@ def validate_dsp_chain(blocks: list[DspBlock]) -> None:
             raise ValueError("demap.soft must be a boolean when provided")
 
 
-def run_dsp_chain(spec: SimulationSpec, samples: np.ndarray, blocks: list[DspBlock]) -> DspOutput:
+def run_dsp_chain(spec: DspSpecSlice, samples: np.ndarray, blocks: list[DspBlock]) -> DspOutput:
     params: dict[str, Any] = {}
     out = samples
     fs = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol

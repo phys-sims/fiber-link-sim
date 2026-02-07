@@ -55,12 +55,12 @@ It focuses on **interfaces, determinism, and state/caching semantics** without c
 
 **Work items**
 
-- [ ] **Introduce `refs`/`signals` sections in `SimulationState`.**
+- [x] **Introduce `refs`/`signals` sections in `SimulationState`.**
       Move large arrays into artifact/blob references and store only references in State.
-- [ ] **Refactor stage outputs to store references** (e.g., waveform refs, rx_samples refs)
+- [x] **Refactor stage outputs to store references** (e.g., waveform refs, rx_samples refs)
       while maintaining the same physics behavior.
-- [ ] **Make StageConfigs minimal and immutable** (only stage-specific spec slices, no full spec object).
-- [ ] **Add unit tests** for State hashing determinism with refs (not raw arrays).
+- [x] **Make StageConfigs minimal and immutable** (only stage-specific spec slices, no full spec object).
+- [x] **Add unit tests** for State hashing determinism with refs (not raw arrays).
 
 **Acceptance criteria**
 
@@ -72,9 +72,9 @@ It focuses on **interfaces, determinism, and state/caching semantics** without c
 
 **Work items**
 
-- [ ] **Eliminate all global RNG usage** (e.g., `np.random.seed`) in stages or adapters.
-- [ ] **Pass per-stage RNGs explicitly** through adapter calls where randomness is required.
-- [ ] **Add determinism tests** that run the pipeline twice with the same seed under a simulated
+- [x] **Eliminate all global RNG usage** (e.g., `np.random.seed`) in stages or adapters.
+- [x] **Pass per-stage RNGs explicitly** through adapter calls where randomness is required.
+- [x] **Add determinism tests** that run the pipeline twice with the same seed under a simulated
       “scheduled executor” mode (can be a local test that shuffles stage ordering constraints).
 
 **Acceptance criteria**
@@ -86,11 +86,11 @@ It focuses on **interfaces, determinism, and state/caching semantics** without c
 
 **Work items**
 
-- [ ] **Artifact store abstraction:** add a small interface for artifact storage (local path by default)
+- [x] **Artifact store abstraction:** add a small interface for artifact storage (local path by default)
       to support future caching backends and sim-utils artifact consumers.
-- [ ] **Explicit artifact metadata schema** (names, shapes, units) to help sim-utils pipeline
+- [x] **Explicit artifact metadata schema** (names, shapes, units) to help sim-utils pipeline
       interpret artifacts consistently.
-- [ ] **Expose a run manifest** (e.g., JSON with stage timing + artifact refs) for harness integration.
+- [x] **Expose a run manifest** (e.g., JSON with stage timing + artifact refs) for harness integration.
 
 **Acceptance criteria**
 
@@ -135,7 +135,7 @@ It focuses on **interfaces, determinism, and state/caching semantics** without c
 ## Tracking checklist
 
 - [x] Phase 0 complete
-- [ ] Phase 1 complete
-- [ ] Phase 2 complete
-- [ ] Phase 3 complete
+- [x] Phase 1 complete
+- [x] Phase 2 complete
+- [x] Phase 3 complete
 - [ ] Phase 4 complete
