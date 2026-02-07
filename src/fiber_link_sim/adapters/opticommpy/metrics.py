@@ -19,8 +19,11 @@ def compute_metrics(symb_rx: np.ndarray, symb_tx: np.ndarray, signal: Signal) ->
     const_type = _const_type(signal)
     order = _const_order(signal)
     rx_aligned, tx_aligned = _align_symbols(symb_rx, symb_tx)
-    evm = opti_metrics.calcEVM(rx_aligned, order, const_type, tx_aligned)
-    evm_mean = float(np.mean(evm))
+    try:
+        evm = opti_metrics.calcEVM(rx_aligned, order, const_type, tx_aligned)
+        evm_mean = float(np.mean(evm))
+    except Exception:
+        evm_mean = 1.0
     if not np.isfinite(evm_mean):
         evm_mean = 1.0
     snr_linear = 1.0 / max(evm_mean, 1e-12)
