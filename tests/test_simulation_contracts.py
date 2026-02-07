@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
+import numpy as np
+
+from fiber_link_sim.adapters.opticommpy.stages import ADAPTERS
+from fiber_link_sim.adapters.opticommpy.types import TxOutput
 from fiber_link_sim.data_models.spec_models import SimulationResult, SimulationSpec
 from fiber_link_sim.simulate import simulate
+from fiber_link_sim.utils import compute_spec_hash
 
 EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
 
@@ -38,3 +44,26 @@ def test_simulation_results_validate() -> None:
         result = simulate(spec_data)
         assert result.status == "success"
         SimulationResult.model_validate(result.model_dump())
+
+
+def test_simulation_runtime_error_returns_structured_result(monkeypatch: Any) -> None:
+    spec_data = _load_example("ook_smoke.json")
+    spec = SimulationSpec.model_validate(spec_data)
+
+    def _broken_tx_run(self: Any, spec: SimulationSpec, seed: int) -> TxOutput:
+        return TxOutput(signal=None, symbols=np.array([]), params=cast(Any, {}))
+
+    monkeypatch.setattr(type(ADAPTERS.tx), "run", _broken_tx_run)
+
+    result = simulate(spec_data)
+
+    assert result.status == "error"
+    assert result.summary is None
+    assert result.error is not None
+    assert result.error.code == "runtime_error"
+    assert "missing tx waveform" in result.error.message
+    assert result.error.details["exception_type"] == "ValueError"
+    assert result.provenance.seed == spec.runtime.seed
+    assert result.provenance.spec_hash == compute_spec_hash(spec)
+    assert result.provenance.runtime_s >= 0
+    SimulationResult.model_validate(result.model_dump())

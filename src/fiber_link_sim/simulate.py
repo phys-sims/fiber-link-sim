@@ -62,7 +62,28 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
     )
 
     pipeline = build_pipeline(spec_model)
-    pipeline.run(state)
+    try:
+        pipeline.run(state)
+    except Exception as exc:
+        runtime_s = time.perf_counter() - start
+        return SimulationResult(
+            v=spec_model.v,
+            status="error",
+            error=ErrorInfo(
+                code="runtime_error",
+                message=str(exc),
+                details={"exception_type": exc.__class__.__name__},
+            ),
+            provenance=Provenance(
+                sim_version=SIM_VERSION,
+                spec_hash=state.meta["spec_hash"],
+                seed=spec_model.runtime.seed,
+                runtime_s=runtime_s,
+                backend=spec_model.propagation.backend,
+                model=spec_model.propagation.model,
+            ),
+            warnings=state.meta.get("warnings", []),
+        )
 
     warnings = state.meta.get("warnings", [])
     artifacts = state.artifacts

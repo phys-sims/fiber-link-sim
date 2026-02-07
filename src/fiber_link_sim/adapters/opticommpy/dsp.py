@@ -113,14 +113,28 @@ def run_dsp_chain(spec: SimulationSpec, samples: np.ndarray, blocks: list[DspBlo
             taps = int(block.params.get("taps", 15))
             mu = float(block.params.get("mu", 1e-3))
             eq_param = build_mimo_eq_params(spec, taps=taps, mu=mu)
-            out = equalization.mimoAdaptEqualizer(out, eq_param)
-            params["mimo_eq"] = {"taps": taps, "mu": mu}
+            try:
+                out = equalization.mimoAdaptEqualizer(out, eq_param)
+            except ZeroDivisionError:
+                params.setdefault("warnings", []).append(
+                    "mimo_eq failed due to division by zero; signal passthrough applied."
+                )
+                params["mimo_eq"] = {"taps": taps, "mu": mu, "error": "division_by_zero"}
+            else:
+                params["mimo_eq"] = {"taps": taps, "mu": mu}
         elif block.name == "ffe":
             taps = int(block.params.get("taps", 11))
             mu = float(block.params.get("mu", 1e-3))
             eq_param = build_mimo_eq_params(spec, taps=taps, mu=mu)
-            out = equalization.mimoAdaptEqualizer(out, eq_param)
-            params["ffe"] = {"taps": taps, "mu": mu}
+            try:
+                out = equalization.mimoAdaptEqualizer(out, eq_param)
+            except ZeroDivisionError:
+                params.setdefault("warnings", []).append(
+                    "ffe failed due to division by zero; signal passthrough applied."
+                )
+                params["ffe"] = {"taps": taps, "mu": mu, "error": "division_by_zero"}
+            else:
+                params["ffe"] = {"taps": taps, "mu": mu}
         elif block.name == "cpr":
             const_symb = modulation.grayMapping(
                 4 if spec.signal.format == "coherent_qpsk" else 4,

@@ -21,6 +21,8 @@ def compute_metrics(symb_rx: np.ndarray, symb_tx: np.ndarray, signal: Signal) ->
     rx_aligned, tx_aligned = _align_symbols(symb_rx, symb_tx)
     evm = opti_metrics.calcEVM(rx_aligned, order, const_type, tx_aligned)
     evm_mean = float(np.mean(evm))
+    if not np.isfinite(evm_mean):
+        evm_mean = 1.0
     snr_linear = 1.0 / max(evm_mean, 1e-12)
     snr_db = 10.0 * float(np.log10(snr_linear))
 
@@ -28,6 +30,8 @@ def compute_metrics(symb_rx: np.ndarray, symb_tx: np.ndarray, signal: Signal) ->
         ber, _, snr = opti_metrics.fastBERcalc(rx_aligned, tx_aligned, order, const_type)
         pre_fec_ber = float(np.mean(ber))
         snr_db = float(np.mean(snr))
+        if not np.isfinite(pre_fec_ber) or not np.isfinite(snr_db):
+            raise ValueError("non-finite BER/SNR from fastBERcalc")
     except Exception:
         bits_per_symbol = float(np.log2(order))
         ebn0_db = snr_db - 10.0 * float(np.log10(bits_per_symbol))
