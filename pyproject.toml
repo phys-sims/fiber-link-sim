@@ -10,9 +10,9 @@ license = { file = "LICENSE" }
 dependencies = [
   "numpy",
   "scipy",
-  "pydantic>=2.7"
-  "phys-pipeline"
-  "OptiCommPy"
+  "pydantic>=2.7",
+  "phys-pipeline",
+  "OptiCommPy",
 ]
 [project.optional-dependencies]
 dev = [
