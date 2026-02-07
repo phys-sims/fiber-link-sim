@@ -3,9 +3,9 @@
 > **Source of truth:** Update this file whenever behavior, tests, or schemas change.
 
 ## Last updated
-- Date: 2026-02-07
+- Date: 2026-02-08
 - By: @openai-codex
-- Scope: Adapter unit tests, determinism coverage, status refresh
+- Scope: Added phys-pipeline readiness roadmap
 
 ---
 
@@ -83,3 +83,4 @@
 
 - [x] Populate CI and test runtime data after next green run.
 - [x] Record example spec pass/fail results from contract tests.
+- [ ] Execute phys-pipeline readiness roadmap (docs/roadmaps/phys_pipeline_readiness.md).
