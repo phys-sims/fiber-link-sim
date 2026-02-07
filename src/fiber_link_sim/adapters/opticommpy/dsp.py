@@ -14,7 +14,7 @@ from fiber_link_sim.adapters.opticommpy.param_builders import (
     build_resample_params,
 )
 from fiber_link_sim.adapters.opticommpy.types import DspOutput
-from fiber_link_sim.data_models.spec_models import DSPBlockName, DspBlock, SimulationSpec
+from fiber_link_sim.data_models.spec_models import DspBlock, DSPBlockName, SimulationSpec
 
 _DSP_BLOCKS = {
     "resample",
