@@ -55,9 +55,7 @@ def _const_order(signal: Signal) -> int:
     return 4
 
 
-def _align_symbols(
-    symb_rx: np.ndarray, symb_tx: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+def _align_symbols(symb_rx: np.ndarray, symb_tx: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     rx = _as_2d(symb_rx)
     tx = _as_2d(symb_tx)
     n = min(rx.shape[0], tx.shape[0])
