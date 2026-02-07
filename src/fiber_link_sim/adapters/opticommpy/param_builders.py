@@ -39,6 +39,21 @@ def _beta2_to_dispersion(beta2_s2_per_m: float, fc_hz: float) -> float:
     return dispersion_s_per_m2 * 1e6
 
 
+def _span_loss_db(spec: SimulationSpec, layout: ChannelLayout) -> float:
+    return spec.fiber.alpha_db_per_km * layout.span_length_km
+
+
+def _amplifier_gain_db(spec: SimulationSpec, span_loss_db: float) -> float:
+    if spec.spans.amplifier.type == "none":
+        return 0.0
+    if spec.spans.amplifier.mode == "auto_gain":
+        max_gain_db = spec.spans.amplifier.max_gain_db or 0.0
+        return min(span_loss_db, max_gain_db)
+    if spec.spans.amplifier.mode == "fixed_gain":
+        return float(spec.spans.amplifier.fixed_gain_db or 0.0)
+    return 0.0
+
+
 def build_tx_params(
     spec: SimulationSpec, seed: int, format_tag: Literal["coherent", "pam"]
 ) -> parameters:
@@ -96,11 +111,28 @@ def build_channel_params(spec: SimulationSpec, seed: int) -> tuple[parameters, C
 
     param.D = _beta2_to_dispersion(spec.fiber.beta2_s2_per_m, param.Fc)
 
+    effects = spec.propagation.effects
+    if not effects.dispersion:
+        param.D = 0.0
+    if not effects.nonlinearity:
+        param.gamma = 0.0
+    param.pmd_ps_sqrt_km = spec.fiber.pmd_ps_sqrt_km if effects.pmd else 0.0
+    param.env_effects = effects.env_effects
+
+    span_loss_db = _span_loss_db(spec, layout)
+    param.span_loss_db = span_loss_db
+    param.amp_gain_db = _amplifier_gain_db(spec, span_loss_db)
+    param.amp_mode = spec.spans.amplifier.mode
+
     if spec.spans.amplifier.type == "edfa":
-        param.amp = "edfa"
-        param.NF = spec.spans.amplifier.noise_figure_db or 0.0
+        if effects.ase:
+            param.amp = "edfa"
+            param.NF = spec.spans.amplifier.noise_figure_db or 0.0
+        else:
+            param.amp = "ideal"
+            param.NF = 0.0
     else:
-        param.amp = "None"
+        param.amp = None
         param.NF = 0.0
     return param, layout
 

@@ -55,6 +55,8 @@ How the route is divided into spans and how loss is handled.
   - `type=edfa` → EDFA model with ASE, requires `noise_figure_db`
   - `mode=auto_gain` → gain chosen to compensate span loss (bounded by `max_gain_db`)
   - `mode=fixed_gain` → use `fixed_gain_db`
+  - **Implementation:** OptiCommPy adapter maps auto-gain/fixed-gain into channel amplification behavior and tracks the
+    requested per-span gain for deterministic scaling.
 
 ### `signal`
 Defines modulation and framing (latency depends on rate + framing, not just modulation name).
@@ -84,6 +86,8 @@ How fiber propagation is simulated.
 - `model`: scalar_glnse or manakov
 - `backend`: backend identifier (v0.1 supports builtin_ssfm only)
 - `effects`: toggles (dispersion, nonlinearity, ase, pmd, env_effects)
+  - **Implementation:** dispersion → OptiCommPy `D`, nonlinearity → `gamma`, ASE → EDFA vs ideal amp; PMD/env toggles
+    are wired into adapter parameters for future modeling.
 - `ssfm`: numerical step size controls (dz_m, step_adapt)
 
 ### `runtime`

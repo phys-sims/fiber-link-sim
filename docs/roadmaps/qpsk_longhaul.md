@@ -67,9 +67,9 @@ baseline implementation decisions.
 | Group index for latency | `fiber.n_group` | Supports propagation delay accounting. |
 | Path geometry / segment lengths | `path.segments[].length_m` | Used to build total path length and optional span splitting. |
 | Span plan | `spans.mode`, `spans.span_length_m` | Controls span construction. |
-| Amplifier behavior + ASE | `spans.amplifier.type`, `spans.amplifier.mode`, `spans.amplifier.noise_figure_db`, `spans.amplifier.max_gain_db`, `spans.amplifier.fixed_gain_db` | Includes EDFA configuration for long-haul. |
+| Amplifier behavior + ASE | `spans.amplifier.type`, `spans.amplifier.mode`, `spans.amplifier.noise_figure_db`, `spans.amplifier.max_gain_db`, `spans.amplifier.fixed_gain_db` | Implemented in OptiCommPy adapter (auto-gain uses span loss bounded by `max_gain_db`, fixed-gain uses `fixed_gain_db`, ASE toggled via EDFA vs ideal amp). |
 | Propagation model selection | `propagation.model`, `propagation.backend` | QPSK long-haul typically uses `manakov` + `builtin_ssfm`. |
-| Effect toggles | `propagation.effects.dispersion`, `propagation.effects.nonlinearity`, `propagation.effects.ase`, `propagation.effects.pmd`, `propagation.effects.env_effects` | Enable/disable impairment sources. |
+| Effect toggles | `propagation.effects.dispersion`, `propagation.effects.nonlinearity`, `propagation.effects.ase`, `propagation.effects.pmd`, `propagation.effects.env_effects` | Implemented in OptiCommPy adapter (dispersion → `D`, nonlinearity → `gamma`, ASE → EDFA vs ideal amp; PMD/env toggles tracked for future modeling). |
 | SSFM step control | `propagation.ssfm.dz_m`, `propagation.ssfm.step_adapt` | Step size/adaptation for SSFM. |
 
 **Acceptance criteria**

@@ -57,8 +57,15 @@ class ChannelAdapter:
             signal_out = out
             params = param
 
+        amp_gain_db = getattr(param, "amp_gain_db", None)
+        span_loss_db = getattr(param, "span_loss_db", None)
+        if amp_gain_db is not None and span_loss_db is not None and param.amp in {"edfa", "ideal"}:
+            delta_db = (amp_gain_db - span_loss_db) * layout.n_spans
+            if abs(delta_db) > 1e-9:
+                signal_out = np.asarray(signal_out) * 10 ** (delta_db / 20)
+
         osnr_db = None
-        if spec.spans.amplifier.type == "edfa":
+        if spec.spans.amplifier.type == "edfa" and spec.propagation.effects.ase:
             osnr_lin = opti_metrics.calcLinOSNR(
                 layout.n_spans,
                 units.dbm_to_watts(spec.transceiver.tx.launch_power_dbm),
