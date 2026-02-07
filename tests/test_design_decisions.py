@@ -5,6 +5,7 @@ from pathlib import Path
 
 from phys_pipeline import State
 
+from fiber_link_sim.adapters.opticommpy import units
 from fiber_link_sim.simulate import simulate
 from fiber_link_sim.stages.base import SimulationState
 
@@ -24,3 +25,9 @@ def test_fec_disabled_passthrough() -> None:
 def test_state_uses_phys_pipeline_base_type() -> None:
     state = SimulationState()
     assert isinstance(state, State)
+
+
+def test_opticommpy_unit_round_trip() -> None:
+    dbm_value = 3.0
+    watts = units.dbm_to_watts(dbm_value)
+    assert abs(units.watts_to_dbm(watts) - dbm_value) < 1e-9

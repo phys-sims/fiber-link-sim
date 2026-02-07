@@ -6,6 +6,7 @@ from typing import Literal
 import numpy as np
 from optic.utils import parameters  # type: ignore[import-untyped]
 
+from fiber_link_sim.adapters.opticommpy import units
 from fiber_link_sim.data_models.spec_models import SimulationSpec
 from fiber_link_sim.utils import total_link_length_m
 
@@ -33,9 +34,8 @@ def _channel_layout(spec: SimulationSpec) -> ChannelLayout:
 
 
 def _beta2_to_dispersion(beta2_s2_per_m: float, fc_hz: float) -> float:
-    c = 299_792_458.0
-    wavelength_m = c / fc_hz
-    dispersion_s_per_m2 = -(2.0 * np.pi * c / (wavelength_m**2)) * beta2_s2_per_m
+    wavelength_m = units.wavelength_m(fc_hz)
+    dispersion_s_per_m2 = -(2.0 * np.pi * units.C_M_S / (wavelength_m**2)) * beta2_s2_per_m
     return dispersion_s_per_m2 * 1e6
 
 
@@ -64,7 +64,7 @@ def build_tx_params(
         param.nChannels = 1
         param.powerPerChannel = spec.transceiver.tx.launch_power_dbm
         param.laserLinewidth = spec.transceiver.tx.laser_linewidth_hz
-        param.Fc = 193.1e12
+        param.Fc = units.carrier_frequency_hz()
         param.wdmGridSpacing = 50e9
         param.pulseType = "rrc"
         param.nFilterTaps = 1024
@@ -88,7 +88,7 @@ def build_channel_params(spec: SimulationSpec, seed: int) -> tuple[parameters, C
     param.hz = spec.propagation.ssfm.dz_m / 1000.0
     param.alpha = spec.fiber.alpha_db_per_km
     param.gamma = spec.fiber.gamma_w_inv_m * 1e3
-    param.Fc = 193.1e12
+    param.Fc = units.carrier_frequency_hz()
     param.Fs = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol
     param.prgsBar = False
     param.seed = seed
@@ -137,8 +137,8 @@ def build_resample_params(in_fs: float, out_fs: float) -> parameters:
 def build_edc_params(spec: SimulationSpec) -> parameters:
     param = parameters()
     param.L = total_link_length_m(spec.path) / 1000.0
-    param.D = _beta2_to_dispersion(spec.fiber.beta2_s2_per_m, 193.1e12)
-    param.Fc = 193.1e12
+    param.D = _beta2_to_dispersion(spec.fiber.beta2_s2_per_m, units.carrier_frequency_hz())
+    param.Fc = units.carrier_frequency_hz()
     param.Fs = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol
     return param
 
