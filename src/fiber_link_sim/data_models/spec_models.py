@@ -13,7 +13,7 @@ v0.1 focuses on:
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -195,7 +195,7 @@ class Autotune(BaseModel):
     enabled: bool = False
     budget_trials: int = Field(30, ge=1)
     targets: list[Literal["max_net_after_fec"]] = Field(
-        default_factory=lambda: ["max_net_after_fec"],
+        default_factory=lambda: cast(list[Literal["max_net_after_fec"]], ["max_net_after_fec"]),
     )
 
 
