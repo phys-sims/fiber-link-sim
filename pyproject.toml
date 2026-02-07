@@ -10,9 +10,9 @@ license = { file = "LICENSE" }
 dependencies = [
   "numpy",
   "scipy",
-  "pydantic>=2.7"
-  "phys-pipeline"
-  "OptiCommPy"
+  "pydantic>=2.7",
+  "phys-pipeline",
+  "OptiCommPy",
 ]
 [project.optional-dependencies]
 dev = [
@@ -63,7 +63,7 @@ warn_required_dynamic_aliases = true
 # --- codespell ---
 [tool.codespell]
 # add any frequent false positives here
-ignore-words-list = "teh,nd"
+ignore-words-list = "teh,nd,ser"
 skip = "poetry.lock,*.lock,*.svg,*.png,*.jpg"
 # You can also narrow paths if needed:
 # path = "src,tests,docs,examples"

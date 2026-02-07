@@ -1,0 +1,16 @@
+name: Nightly (slow tests)
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  slow-tests:
+    uses: phys-sims/.github/.github/workflows/python-pytest.yml@v1
+    with:
+      python-versions: '["3.11"]'
+      pytest-args: '-q -m "slow"'
