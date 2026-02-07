@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from optic.comm import metrics as opti_metrics  # type: ignore[import-untyped]
@@ -122,12 +122,12 @@ class MetricsAdapter:
 
 @dataclass(slots=True)
 class OptiCommPyAdapters:
-    tx: TxAdapter = TxAdapter()
-    channel: ChannelAdapter = ChannelAdapter()
-    rx_frontend: RxFrontEndAdapter = RxFrontEndAdapter()
-    dsp: DSPAdapter = DSPAdapter()
-    fec: FECAdapter = FECAdapter()
-    metrics: MetricsAdapter = MetricsAdapter()
+    tx: TxAdapter = field(default_factory=TxAdapter)
+    channel: ChannelAdapter = field(default_factory=ChannelAdapter)
+    rx_frontend: RxFrontEndAdapter = field(default_factory=RxFrontEndAdapter)
+    dsp: DSPAdapter = field(default_factory=DSPAdapter)
+    fec: FECAdapter = field(default_factory=FECAdapter)
+    metrics: MetricsAdapter = field(default_factory=MetricsAdapter)
 
 
 ADAPTERS = OptiCommPyAdapters()
