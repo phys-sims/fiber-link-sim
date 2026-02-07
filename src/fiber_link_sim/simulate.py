@@ -54,6 +54,29 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
             ),
         )
 
+    if spec_model.processing.autotune and spec_model.processing.autotune.enabled:
+        runtime_s = time.perf_counter() - start
+        return SimulationResult(
+            v=spec_model.v,
+            status="error",
+            error=ErrorInfo(
+                code="not_implemented",
+                message="processing.autotune.enabled is not implemented",
+                details={
+                    "budget_trials": spec_model.processing.autotune.budget_trials,
+                    "targets": spec_model.processing.autotune.targets,
+                },
+            ),
+            provenance=Provenance(
+                sim_version=SIM_VERSION,
+                spec_hash=compute_spec_hash(spec_model),
+                seed=spec_model.runtime.seed,
+                runtime_s=runtime_s,
+                backend=spec_model.propagation.backend,
+                model=spec_model.propagation.model,
+            ),
+        )
+
     state = SimulationState(
         meta={
             "seed": spec_model.runtime.seed,

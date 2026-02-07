@@ -71,3 +71,12 @@ def test_dsp_chain_param_validation() -> None:
 
     with pytest.raises(ValueError, match="resample.out_fs_hz"):
         validate_dsp_chain([DspBlock(name="resample", params={"out_fs_hz": 0})])
+
+
+def test_autotune_enabled_returns_not_implemented() -> None:
+    spec = json.loads((EXAMPLE_DIR / "ook_smoke.json").read_text())
+    spec["processing"]["autotune"] = {"enabled": True, "budget_trials": 3}
+    result = simulate(spec)
+    assert result.status == "error"
+    assert result.error is not None
+    assert result.error.code == "not_implemented"
