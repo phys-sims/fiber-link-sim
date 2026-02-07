@@ -16,6 +16,8 @@ def _load_example(name: str) -> dict:
 def test_example_specs_validate() -> None:
     for filename in (
         "qpsk_longhaul_manakov.json",
+        "qpsk_longhaul_1span.json",
+        "qpsk_longhaul_multispan.json",
         "ook_smoke.json",
         "pam4_shorthaul.json",
     ):
@@ -27,6 +29,8 @@ def test_example_specs_validate() -> None:
 def test_simulation_results_validate() -> None:
     for filename in (
         "qpsk_longhaul_manakov.json",
+        "qpsk_longhaul_1span.json",
+        "qpsk_longhaul_multispan.json",
         "ook_smoke.json",
         "pam4_shorthaul.json",
     ):
