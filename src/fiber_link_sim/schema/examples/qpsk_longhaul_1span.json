@@ -1,0 +1,107 @@
+{
+  "v": "0.1",
+  "scenario": {
+    "name": "QPSK coherent long-haul single-span",
+    "tags": [
+      "coherent",
+      "qpsk",
+      "long-haul",
+      "1-span"
+    ]
+  },
+  "path": {
+    "segments": [
+      {
+        "length_m": 80000,
+        "temp_c": 25
+      }
+    ],
+    "geo": {
+      "enabled": false,
+      "polyline_wgs84": []
+    }
+  },
+  "fiber": {
+    "alpha_db_per_km": 0.2,
+    "beta2_s2_per_m": -2.17e-26,
+    "beta3_s3_per_m": 1.3e-40,
+    "gamma_w_inv_m": 0.0013,
+    "pmd_ps_sqrt_km": 0.0,
+    "n_group": 1.4682
+  },
+  "spans": {
+    "mode": "from_path_segments",
+    "span_length_m": 80000,
+    "amplifier": {
+      "type": "edfa",
+      "mode": "auto_gain",
+      "noise_figure_db": 5.0,
+      "max_gain_db": 25.0
+    }
+  },
+  "signal": {
+    "format": "coherent_qpsk",
+    "symbol_rate_baud": 32000000000,
+    "rolloff": 0.2,
+    "n_pol": 2,
+    "frame": {
+      "payload_bits": 15000,
+      "preamble_bits": 256,
+      "pilot_bits": 0
+    }
+  },
+  "transceiver": {
+    "tx": {
+      "laser_linewidth_hz": 100000,
+      "launch_power_dbm": 0.0
+    },
+    "rx": {
+      "coherent": true,
+      "lo_linewidth_hz": 100000,
+      "adc": {
+        "sample_rate_hz": 128000000000,
+        "bits": 8
+      },
+      "noise": {
+        "thermal": true,
+        "shot": true
+      }
+    }
+  },
+  "processing": {
+    "dsp_chain": [],
+    "fec": {
+      "enabled": true,
+      "scheme": "ldpc",
+      "code_rate": 0.8,
+      "params": {
+        "max_iters": 25
+      }
+    }
+  },
+  "propagation": {
+    "model": "manakov",
+    "backend": "builtin_ssfm",
+    "effects": {
+      "dispersion": true,
+      "nonlinearity": true,
+      "ase": true,
+      "pmd": false,
+      "env_effects": false
+    },
+    "ssfm": {
+      "dz_m": 100,
+      "step_adapt": false
+    }
+  },
+  "runtime": {
+    "seed": 2112,
+    "n_symbols": 8192,
+    "samples_per_symbol": 4,
+    "max_runtime_s": 60
+  },
+  "outputs": {
+    "artifact_level": "basic",
+    "return_waveforms": false
+  }
+}
