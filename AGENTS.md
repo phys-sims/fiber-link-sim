@@ -122,6 +122,9 @@ If there is tooling such as `scripts/adr_tools.py`, use it; otherwise create ADR
 ## Developer workflow (CI must stay green)
 Before opening/submitting any PR, ensure **all CI gates pass locally** (or via the repo’s CI runner):
 
+### Checklist reference
+- `docs/ci_checklist.md` — required CI commands and minimal fast checks for local iteration.
+
 ### Required checks (must pass)
 - **Pre-commit / linting & formatting**
   - `python -m pre_commit run -a`
