@@ -138,6 +138,7 @@ Before opening/submitting any PR, ensure **all CI gates pass locally** (or via t
 - If a change causes failures, fix them in the same branch/PR (do not leave the repo in a broken state).
 - Prefer the smallest change that makes CI green again; document any non-trivial fix in an ADR or PR notes when appropriate.
 - Always keep schemas/examples/docs synchronized with code behavior.
+- Update `STATUS.md` whenever behavior, tests, or schemas change.
 
 ### Setup (preferred)
 - Install dev deps: `python -m pip install -e ".[dev]"`

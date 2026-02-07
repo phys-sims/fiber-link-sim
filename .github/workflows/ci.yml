@@ -48,7 +48,7 @@ jobs:
         run: mypy # [tool.mypy] sets scope to src
           
       - name: Tests
-        run: pytest -q -m "not slow" --durations=10
+        run: pytest -q -m "not slow" --durations=10 --cov=fiber_link_sim --cov-report=term-missing:skip-covered
 
   gate:
     name: gate
