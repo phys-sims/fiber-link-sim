@@ -5,6 +5,31 @@ This roadmap captures the **required capabilities** for coherent QPSK long-haul 
 [physics_context](../refs/physics_context.md) and [phys_pipeline_usage](../refs/phys_pipeline_usage.md) with the schema contract in
 `src/fiber_link_sim/schema/simulation_spec.schema.v0.1.json`.
 
+## Reference Baselines
+
+This roadmap anchors the coherent QPSK long-haul target to a small set of reference baselines so the OptiCommPy-backed
+implementation remains grounded in known behavior before we expand or tune parameters.
+
+**Primary baseline (OptiCommPy examples/docs)**
+
+- **OptiCommPy example notebooks/docs are the first-line reference** for the coherent QPSK long-haul chain. Use the
+  OptiCommPy canonical flow as the baseline mapping for stage ordering and expected metrics plumbing:
+  `simpleWDMTx → manakovSSF → pdmCoherentReceiver → DSP → metrics`.
+- The intent is to mirror OptiCommPy defaults (e.g., symbol rates, pulse shaping, SSFM step sizing, DSP block
+  order) wherever compatible with the `SimulationSpec`, and then document any deliberate deviations in ADRs.
+
+**Secondary reference categories (sanity bounds & trends)**
+
+- **Textbook fiber systems** (e.g., Govind P. Agrawal, *Fiber-Optic Communication Systems*) for expected dispersion,
+  nonlinearity, and OSNR vs. reach trends.
+- **Coherent systems fundamentals** (e.g., Ip & Kahn coherent receiver/DSP papers) for DSP block ordering and BER vs.
+  OSNR expectations.
+- **GN-model / nonlinear impairment studies** (e.g., Essiambre et al. papers on GN/NLI models) for launch-power sweep
+  behavior and optimal power region trends.
+
+These secondary sources are used to sanity-check OSNR/BER/launch-power trends and do not supersede the OptiCommPy
+baseline implementation decisions.
+
 ## Stage-by-stage capability map
 
 > **Legend:** Schema paths use dotted notation (e.g., `signal.format`). All schema references are in
