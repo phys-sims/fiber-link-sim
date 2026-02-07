@@ -1,9 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from phys_pipeline import SequentialPipeline  # type: ignore[import-untyped]
 
 from fiber_link_sim.data_models.spec_models import SimulationSpec
-from fiber_link_sim.stages.base import Stage
+from fiber_link_sim.stages.configs import (
+    ChannelStageConfig,
+    DSPStageConfig,
+    FECStageConfig,
+    MetricsStageConfig,
+    RxFrontEndStageConfig,
+    TxStageConfig,
+)
 from fiber_link_sim.stages.core import (
     ChannelStage,
     DSPStage,
@@ -14,12 +21,13 @@ from fiber_link_sim.stages.core import (
 )
 
 
-def build_pipeline(spec: SimulationSpec) -> Sequence[Stage]:
-    return [
-        TxStage(spec=spec),
-        ChannelStage(spec=spec),
-        RxFrontEndStage(spec=spec),
-        DSPStage(spec=spec),
-        FECStage(spec=spec),
-        MetricsStage(spec=spec),
+def build_pipeline(spec: SimulationSpec) -> SequentialPipeline:
+    stages = [
+        TxStage(cfg=TxStageConfig(spec=spec)),
+        ChannelStage(cfg=ChannelStageConfig(spec=spec)),
+        RxFrontEndStage(cfg=RxFrontEndStageConfig(spec=spec)),
+        DSPStage(cfg=DSPStageConfig(spec=spec)),
+        FECStage(cfg=FECStageConfig(spec=spec)),
+        MetricsStage(cfg=MetricsStageConfig(spec=spec)),
     ]
+    return SequentialPipeline(stages, name="fiber_link_sim")

@@ -3,78 +3,67 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import log10
 
-from fiber_link_sim.data_models.spec_models import SimulationSpec
-from fiber_link_sim.metrics import (
-    ber_from_snr_linear,
-    evm_from_snr_linear,
-    snr_from_osnr_db,
+from fiber_link_sim.adapters.opticommpy import compute_metrics, run_channel, run_rx_frontend, run_tx
+from fiber_link_sim.adapters.opticommpy.dsp import run_dsp_chain
+from fiber_link_sim.stages.base import SimulationState, Stage, StageResult
+from fiber_link_sim.stages.configs import (
+    ChannelStageConfig,
+    DSPStageConfig,
+    FECStageConfig,
+    MetricsStageConfig,
+    RxFrontEndStageConfig,
+    TxStageConfig,
 )
-from fiber_link_sim.stages.base import Stage, StageResult, State
-from fiber_link_sim.utils import bits_per_symbol, total_link_length_m
+from fiber_link_sim.utils import bits_per_symbol, derive_rng, total_link_length_m
 
 
 @dataclass(slots=True)
 class TxStage(Stage):
-    spec: SimulationSpec
+    cfg: TxStageConfig
     name: str = "tx"
 
-    def run(self, state: State) -> StageResult:
-        signal = self.spec.signal
-        total_bits = (
-            signal.frame.payload_bits + signal.frame.preamble_bits + signal.frame.pilot_bits
-        )
+    def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        spec = self.cfg.spec
+        rng = derive_rng(spec.runtime.seed, self.name)
+        tx_out = run_tx(spec, int(rng.integers(0, 2**31 - 1)))
+
+        total_bits = int(spec.runtime.n_symbols * bits_per_symbol(spec.signal))
         state.tx.update(
             {
-                "format": signal.format,
-                "n_pol": signal.n_pol,
-                "symbol_rate_baud": signal.symbol_rate_baud,
-                "rolloff": signal.rolloff,
+                "format": spec.signal.format,
+                "n_pol": spec.signal.n_pol,
+                "symbol_rate_baud": spec.signal.symbol_rate_baud,
+                "rolloff": spec.signal.rolloff,
                 "total_bits": total_bits,
+                "symbols": tx_out.symbols,
+                "waveform": tx_out.signal,
             }
         )
-        state.stats["bits_per_symbol"] = bits_per_symbol(signal)
-        state.stats["n_symbols"] = self.spec.runtime.n_symbols
+        state.stats["bits_per_symbol"] = bits_per_symbol(spec.signal)
+        state.stats["n_symbols"] = spec.runtime.n_symbols
         return StageResult(state=state)
 
 
 @dataclass(slots=True)
 class ChannelStage(Stage):
-    spec: SimulationSpec
+    cfg: ChannelStageConfig
     name: str = "channel"
 
-    def run(self, state: State) -> StageResult:
-        fiber = self.spec.fiber
-        spans = self.spec.spans
-        total_length_m = total_link_length_m(self.spec.path)
-        total_length_km = total_length_m / 1000.0
-        if spans.mode == "from_path_segments":
-            n_spans = len(self.spec.path.segments)
-            span_length_km = total_length_km / max(n_spans, 1)
-        else:
-            span_length_km = spans.span_length_m / 1000.0
-            n_spans = max(1, int(round(total_length_km / span_length_km)))
+    def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        spec = self.cfg.spec
+        rng = derive_rng(spec.runtime.seed, self.name)
+        signal = state.tx.get("waveform")
+        if signal is None:
+            raise ValueError("missing tx waveform for channel stage")
+        channel_out = run_channel(spec, signal, int(rng.integers(0, 2**31 - 1)))
 
-        span_loss_db = fiber.alpha_db_per_km * span_length_km
-        total_loss_db = fiber.alpha_db_per_km * total_length_km
-        gain_db = 0.0
-        if spans.amplifier.type == "edfa":
-            if spans.amplifier.mode == "auto_gain":
-                max_gain = spans.amplifier.max_gain_db or span_loss_db
-                gain_db = min(span_loss_db, max_gain) * n_spans
-            elif spans.amplifier.mode == "fixed_gain":
-                gain_db = (spans.amplifier.fixed_gain_db or 0.0) * n_spans
-
-        noise_figure_db = spans.amplifier.noise_figure_db or 0.0
-        osnr_db = 20.0 + self.spec.transceiver.tx.launch_power_dbm - total_loss_db + gain_db
-        osnr_db -= noise_figure_db
-
+        total_length_m = total_link_length_m(spec.path)
         state.optical.update(
             {
                 "total_length_m": total_length_m,
-                "n_spans": n_spans,
-                "span_loss_db": span_loss_db,
-                "gain_db": gain_db,
-                "osnr_db": osnr_db,
+                "n_spans": channel_out.n_spans,
+                "osnr_db": channel_out.osnr_db,
+                "waveform": channel_out.signal,
             }
         )
         return StageResult(state=state)
@@ -82,79 +71,115 @@ class ChannelStage(Stage):
 
 @dataclass(slots=True)
 class RxFrontEndStage(Stage):
-    spec: SimulationSpec
+    cfg: RxFrontEndStageConfig
     name: str = "rx_frontend"
 
-    def run(self, state: State) -> StageResult:
-        osnr_db = float(state.optical.get("osnr_db", 0.0))
-        snr_db = snr_from_osnr_db(osnr_db, coherent=self.spec.transceiver.rx.coherent)
-        state.rx["snr_db"] = snr_db
+    def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        spec = self.cfg.spec
+        rng = derive_rng(spec.runtime.seed, self.name)
+        signal = state.optical.get("waveform")
+        if signal is None:
+            raise ValueError("missing optical waveform for rx frontend")
+        rx_out = run_rx_frontend(spec, signal, int(rng.integers(0, 2**31 - 1)))
+        state.rx.update({"samples": rx_out.samples, "frontend": rx_out.params})
         return StageResult(state=state)
 
 
 @dataclass(slots=True)
 class DSPStage(Stage):
-    spec: SimulationSpec
+    cfg: DSPStageConfig
     name: str = "dsp"
 
-    def run(self, state: State) -> StageResult:
-        snr_db = float(state.rx.get("snr_db", 0.0))
-        snr_linear = 10 ** (snr_db / 10.0)
-        evm_rms = evm_from_snr_linear(snr_linear)
-        state.stats["evm_rms"] = evm_rms
+    def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        spec = self.cfg.spec
+        samples = state.rx.get("samples")
+        if samples is None:
+            raise ValueError("missing rx samples for DSP stage")
+        dsp_out = run_dsp_chain(spec, samples, spec.processing.dsp_chain)
+        state.rx["symbols"] = dsp_out.symbols
+        state.stats["dsp"] = dsp_out.params
         return StageResult(state=state)
 
 
 @dataclass(slots=True)
 class FECStage(Stage):
-    spec: SimulationSpec
+    cfg: FECStageConfig
     name: str = "fec"
 
-    def run(self, state: State) -> StageResult:
-        snr_db = float(state.rx.get("snr_db", 0.0))
-        snr_linear = 10 ** (snr_db / 10.0)
-        pre_fec_ber = ber_from_snr_linear(self.spec.signal.format, snr_linear)
-        if self.spec.processing.fec.enabled:
-            code_rate = self.spec.processing.fec.code_rate
+    def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        spec = self.cfg.spec
+        if "pre_fec_ber" not in state.stats:
+            symb_rx = state.rx.get("symbols")
+            symb_tx = state.tx.get("symbols")
+            if symb_rx is None or symb_tx is None:
+                raise ValueError("missing symbols for FEC stage")
+            metrics = compute_metrics(symb_rx, symb_tx, spec.signal)
+            state.stats.update(
+                {
+                    "pre_fec_ber": metrics.pre_fec_ber,
+                    "snr_db": metrics.snr_db,
+                    "evm_rms": metrics.evm_rms,
+                }
+            )
+        pre_fec_ber = float(state.stats.get("pre_fec_ber", 0.0))
+        if spec.processing.fec.enabled:
+            code_rate = spec.processing.fec.code_rate
             post_fec_ber = max(pre_fec_ber * (1.0 - code_rate) * 0.2, 1e-12)
         else:
             post_fec_ber = pre_fec_ber
         fer = min(1.0, post_fec_ber * 10.0)
         state.stats.update(
             {
-                "pre_fec_ber": pre_fec_ber,
                 "post_fec_ber": post_fec_ber,
                 "fer": fer,
             }
         )
+        if spec.processing.fec.enabled:
+            state.meta.setdefault("warnings", []).append(
+                "LDPC decoding is approximated until parity-check matrices are provided."
+            )
         return StageResult(state=state)
 
 
 @dataclass(slots=True)
 class MetricsStage(Stage):
-    spec: SimulationSpec
+    cfg: MetricsStageConfig
     name: str = "metrics"
 
-    def run(self, state: State) -> StageResult:
-        signal = self.spec.signal
+    def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        spec = self.cfg.spec
+        if "pre_fec_ber" not in state.stats:
+            symb_rx = state.rx.get("symbols")
+            symb_tx = state.tx.get("symbols")
+            if symb_rx is None or symb_tx is None:
+                raise ValueError("missing symbols for metrics stage")
+            metrics = compute_metrics(symb_rx, symb_tx, spec.signal)
+            state.stats.update(
+                {
+                    "pre_fec_ber": metrics.pre_fec_ber,
+                    "snr_db": metrics.snr_db,
+                    "evm_rms": metrics.evm_rms,
+                }
+            )
+
         total_length_m = float(state.optical.get("total_length_m", 0.0))
         bits_per_symbol_val = int(state.stats.get("bits_per_symbol", 1))
         total_bits = int(state.tx.get("total_bits", 0))
 
         c_m_s = 299_792_458.0
-        propagation_s = total_length_m / (c_m_s / self.spec.fiber.n_group)
-        serialization_s = total_bits / (signal.symbol_rate_baud * bits_per_symbol_val)
-        processing_est_s = max(1e-6, self.spec.runtime.n_symbols / signal.symbol_rate_baud * 0.1)
+        propagation_s = total_length_m / (c_m_s / spec.fiber.n_group)
+        serialization_s = total_bits / (spec.signal.symbol_rate_baud * bits_per_symbol_val)
+        processing_est_s = max(1e-6, spec.runtime.n_symbols / spec.signal.symbol_rate_baud * 0.1)
         total_latency_s = propagation_s + serialization_s + processing_est_s
 
-        raw_line_rate = signal.symbol_rate_baud * bits_per_symbol_val
-        if self.spec.processing.fec.enabled:
-            net_after_fec = raw_line_rate * self.spec.processing.fec.code_rate
+        raw_line_rate = spec.signal.symbol_rate_baud * bits_per_symbol_val
+        if spec.processing.fec.enabled:
+            net_after_fec = raw_line_rate * spec.processing.fec.code_rate
         else:
             net_after_fec = raw_line_rate
-        goodput = net_after_fec * (signal.frame.payload_bits / max(total_bits, 1))
+        goodput = net_after_fec * (spec.signal.frame.payload_bits / max(total_bits, 1))
 
-        osnr_db = float(state.optical.get("osnr_db", 0.0))
+        osnr_db = state.optical.get("osnr_db")
         summary = {
             "latency_s": {
                 "propagation": propagation_s,
@@ -173,11 +198,24 @@ class MetricsStage(Stage):
                 "fer": float(state.stats.get("fer", 0.0)),
             },
             "osnr_db": osnr_db,
-            "snr_db": float(state.rx.get("snr_db", 0.0)),
+            "snr_db": float(state.stats.get("snr_db", 0.0)),
             "evm_rms": float(state.stats.get("evm_rms", 0.0)),
             "q_factor_db": 20.0 * log10(1.0 / max(state.stats.get("evm_rms", 1.0), 1e-6)),
         }
+        state.stats["summary"] = summary
+
         warnings: list[str] = []
-        if osnr_db < 10.0:
+        if osnr_db is not None and osnr_db < 10.0:
             warnings.append("OSNR is low; results may be unreliable.")
-        return StageResult(state=state, metrics=summary, warnings=warnings)
+        state.meta.setdefault("warnings", []).extend(warnings)
+        return StageResult(state=state)
+
+
+__all__ = [
+    "TxStage",
+    "ChannelStage",
+    "RxFrontEndStage",
+    "DSPStage",
+    "FECStage",
+    "MetricsStage",
+]
