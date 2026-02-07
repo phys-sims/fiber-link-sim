@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import time
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FuturesTimeoutError
+from multiprocessing import get_context
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +22,40 @@ from fiber_link_sim.stages.base import SimulationState
 from fiber_link_sim.utils import compute_spec_hash, create_root_rng
 
 SIM_VERSION = "0.1.0"
+_SIMULATION_CACHE: dict[tuple[str, int], SimulationResult] = {}
+
+
+def _simulate_worker(spec_payload: dict[str, Any], queue: Any) -> None:
+    os.environ["FIBER_LINK_SIM_NO_SUBPROCESS"] = "1"
+    result = simulate(spec_payload)
+    queue.put(result.model_dump())
+
+
+def _run_in_subprocess(spec_payload: dict[str, Any]) -> SimulationResult:
+    ctx = get_context("spawn")
+    queue = ctx.Queue()
+    process = ctx.Process(target=_simulate_worker, args=(spec_payload, queue))
+    process.start()
+    process.join()
+    if process.exitcode != 0 or queue.empty():
+        return SimulationResult(
+            v="v0.2",
+            status="error",
+            error=ErrorInfo(
+                code="runtime_error",
+                message="subprocess simulation failed",
+                details={"exitcode": process.exitcode},
+            ),
+            provenance=Provenance(
+                sim_version=SIM_VERSION,
+                spec_hash="unknown",
+                seed=0,
+                runtime_s=0.0,
+                backend=None,
+                model=None,
+            ),
+        )
+    return SimulationResult.model_validate(queue.get())
 
 
 def _load_spec(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationSpec:
@@ -54,6 +88,12 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
             ),
         )
 
+    spec_hash = compute_spec_hash(spec_model)
+    cache_key = (spec_hash, spec_model.runtime.seed)
+    cached = _SIMULATION_CACHE.get(cache_key)
+    if cached is not None:
+        return SimulationResult.model_validate(cached.model_dump())
+
     if spec_model.processing.autotune and spec_model.processing.autotune.enabled:
         runtime_s = time.perf_counter() - start
         return SimulationResult(
@@ -69,7 +109,7 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
             ),
             provenance=Provenance(
                 sim_version=SIM_VERSION,
-                spec_hash=compute_spec_hash(spec_model),
+                spec_hash=spec_hash,
                 seed=spec_model.runtime.seed,
                 runtime_s=runtime_s,
                 backend=spec_model.propagation.backend,
@@ -80,7 +120,7 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
     state = SimulationState(
         meta={
             "seed": spec_model.runtime.seed,
-            "spec_hash": compute_spec_hash(spec_model),
+            "spec_hash": spec_hash,
             "version": SIM_VERSION,
         },
         rng=create_root_rng(spec_model.runtime.seed),
@@ -103,6 +143,31 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
             ),
             provenance=Provenance(
                 sim_version=SIM_VERSION,
+                spec_hash=spec_hash,
+                seed=spec_model.runtime.seed,
+                runtime_s=runtime_s,
+                backend=spec_model.propagation.backend,
+                model=spec_model.propagation.model,
+            ),
+            warnings=state.meta.get("warnings", []),
+        )
+
+    try:
+        pipeline.run(state)
+    except Exception as exc:
+        if isinstance(exc, SystemError) and not os.environ.get("FIBER_LINK_SIM_NO_SUBPROCESS"):
+            return _run_in_subprocess(spec_model.model_dump())
+        runtime_s = time.perf_counter() - start
+        return SimulationResult(
+            v=spec_model.v,
+            status="error",
+            error=ErrorInfo(
+                code="runtime_error",
+                message=str(exc),
+                details={"exception_type": exc.__class__.__name__},
+            ),
+            provenance=Provenance(
+                sim_version=SIM_VERSION,
                 spec_hash=state.meta["spec_hash"],
                 seed=spec_model.runtime.seed,
                 runtime_s=runtime_s,
@@ -112,13 +177,8 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
             warnings=state.meta.get("warnings", []),
         )
 
-    executor = ThreadPoolExecutor(max_workers=1)
-    future = executor.submit(pipeline.run, state)
-    try:
-        future.result(timeout=timeout_s)
-    except FuturesTimeoutError:
-        runtime_s = time.perf_counter() - start
-        future.cancel()
+    runtime_s = time.perf_counter() - start
+    if runtime_s > spec_model.runtime.max_runtime_s:
         return SimulationResult(
             v=spec_model.v,
             status="error",
@@ -140,42 +200,19 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
             ),
             warnings=state.meta.get("warnings", []),
         )
-    except Exception as exc:
-        runtime_s = time.perf_counter() - start
-        return SimulationResult(
-            v=spec_model.v,
-            status="error",
-            error=ErrorInfo(
-                code="runtime_error",
-                message=str(exc),
-                details={"exception_type": exc.__class__.__name__},
-            ),
-            provenance=Provenance(
-                sim_version=SIM_VERSION,
-                spec_hash=state.meta["spec_hash"],
-                seed=spec_model.runtime.seed,
-                runtime_s=runtime_s,
-                backend=spec_model.propagation.backend,
-                model=spec_model.propagation.model,
-            ),
-            warnings=state.meta.get("warnings", []),
-        )
-    finally:
-        executor.shutdown(wait=False, cancel_futures=True)
 
     warnings = state.meta.get("warnings", [])
     artifacts = state.artifacts
     summary_payload = state.stats.get("summary")
     summary = Summary.model_validate(summary_payload) if summary_payload else None
 
-    runtime_s = time.perf_counter() - start
-    return SimulationResult(
+    result = SimulationResult(
         v=spec_model.v,
         status="success",
         summary=summary,
         provenance=Provenance(
             sim_version=SIM_VERSION,
-            spec_hash=state.meta["spec_hash"],
+            spec_hash=spec_hash,
             seed=spec_model.runtime.seed,
             runtime_s=runtime_s,
             backend=spec_model.propagation.backend,
@@ -184,3 +221,5 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
         warnings=warnings,
         artifacts=[Artifact.model_validate(artifact) for artifact in artifacts],
     )
+    _SIMULATION_CACHE[cache_key] = result
+    return SimulationResult.model_validate(result.model_dump())

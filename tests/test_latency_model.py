@@ -3,9 +3,9 @@ from __future__ import annotations
 from math import isclose
 
 from fiber_link_sim.data_models.spec_models import SimulationSpec
-from fiber_link_sim.stages.core import MetricsStage
 from fiber_link_sim.stages.base import SimulationState
 from fiber_link_sim.stages.configs import MetricsStageConfig
+from fiber_link_sim.stages.core import MetricsStage
 
 
 def test_latency_model_breakdown_exact() -> None:

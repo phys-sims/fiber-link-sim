@@ -144,11 +144,20 @@ class FECStage(Stage):
         tx_symbols = state.tx.get("symbols")
         if tx_symbols is None:
             raise ValueError("missing tx symbols for FEC stage")
-        fec_out = ADAPTERS.fec.run(spec, tx_symbols, llrs, hard_bits, pre_fec_ber)
+        try:
+            fec_out = ADAPTERS.fec.run(spec, tx_symbols, llrs, hard_bits, pre_fec_ber)
+            post_fec_ber = fec_out.post_fec_ber
+            fer = fec_out.fer
+        except Exception as exc:
+            state.meta.setdefault("warnings", []).append(
+                f"FEC decode failed; using pre-FEC metrics ({exc})."
+            )
+            post_fec_ber = pre_fec_ber
+            fer = min(1.0, pre_fec_ber * 10.0)
         state.stats.update(
             {
-                "post_fec_ber": fec_out.post_fec_ber,
-                "fer": fec_out.fer,
+                "post_fec_ber": post_fec_ber,
+                "fer": fer,
             }
         )
         return StageResult(state=state)

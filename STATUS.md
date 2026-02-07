@@ -3,9 +3,9 @@
 > **Source of truth:** Update this file whenever behavior, tests, or schemas change.
 
 ## Last updated
-- Date: 2026-02-09
+- Date: 2026-02-07
 - By: @openai-codex
-- Scope: latency-model/schema/tests/docs
+- Scope: FEC fallback stability, subprocess retry, example runtimes
 
 ---
 
@@ -13,10 +13,10 @@
 
 | Check | Command | Status | Last run | Notes |
 | --- | --- | --- | --- | --- |
-| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-08 |  |
-| Type checking (mypy) | `python -m mypy src` | ✅ | 2026-02-08 |  |
-| Pytest fast | `python -m pytest -q -m "not slow" --durations=10` | ✅ | 2026-02-08 |  |
-| Pytest slow | `python -m pytest -q -m slow --durations=10` | ☐ | YYYY-MM-DD |  |
+| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-07 |  |
+| Type checking (mypy) | `python -m mypy src` | ✅ | 2026-02-07 |  |
+| Pytest fast | `python -m pytest -q -m "not slow" --durations=10` | ✅ | 2026-02-07 |  |
+| Pytest slow | `python -m pytest -q -m slow --durations=10` | ✅ | 2026-02-07 |  |
 
 ---
 
@@ -24,8 +24,8 @@
 
 | Suite | Definition | Typical runtime | Slowest tests (top 3) | Last measured | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Fast | `-m "not slow" --durations=10` | TBD | TBD | YYYY-MM-DD |  |
-| Slow | `-m slow --durations=10` | TBD | TBD | YYYY-MM-DD |  |
+| Fast | `-m "not slow" --durations=10` | ~15s | DSP demap, ADC quantization | 2026-02-07 |  |
+| Slow | `-m slow --durations=10` | ~9m | QPSK effects toggle, contracts | 2026-02-07 |  |
 | Full | `-m "slow or not slow" --durations=10` | TBD | TBD | YYYY-MM-DD |  |
 
 ---
@@ -40,11 +40,11 @@
 
 | Example | Spec validate | Runtime validate | Notes |
 | --- | --- | --- | --- |
-| `src/fiber_link_sim/schema/examples/qpsk_longhaul_1span.json` | ☐ | ☐ |  |
-| `src/fiber_link_sim/schema/examples/qpsk_longhaul_manakov.json` | ☐ | ☐ |  |
-| `src/fiber_link_sim/schema/examples/qpsk_longhaul_multispan.json` | ☐ | ☐ |  |
-| `src/fiber_link_sim/schema/examples/ook_smoke.json` | ☐ | ☐ |  |
-| `src/fiber_link_sim/schema/examples/pam4_shorthaul.json` | ☐ | ☐ |  |
+| `src/fiber_link_sim/schema/examples/qpsk_longhaul_1span.json` | ✅ | ✅ |  |
+| `src/fiber_link_sim/schema/examples/qpsk_longhaul_manakov.json` | ✅ | ✅ |  |
+| `src/fiber_link_sim/schema/examples/qpsk_longhaul_multispan.json` | ✅ | ✅ |  |
+| `src/fiber_link_sim/schema/examples/ook_smoke.json` | ✅ | ✅ |  |
+| `src/fiber_link_sim/schema/examples/pam4_shorthaul.json` | ✅ | ✅ |  |
 
 ---
 
