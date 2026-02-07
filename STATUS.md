@@ -3,9 +3,9 @@
 > **Source of truth:** Update this file whenever behavior, tests, or schemas change.
 
 ## Last updated
-- Date: 2026-02-08
+- Date: 2026-02-10
 - By: @openai-codex
-- Scope: artifacts/behavior/tests/docs
+- Scope: docs
 
 ---
 

@@ -32,6 +32,16 @@ Key references for deeper details live in:
 * `docs/phys_pipeline_usage.md`
 * `src/fiber_link_sim/schema/README.md`
 * `docs/stages_and_flags.md`
+* `docs/waveform_examples.md`
+
+## Waveform examples
+
+Visuals help anchor what the simulator models. Here are quick-look waveforms and a constellation
+example drawn from deterministic example symbol streams:
+
+![OOK waveform](docs/assets/waveforms/ook_waveform.svg)
+![PAM4 waveform](docs/assets/waveforms/pam4_waveform.svg)
+![QPSK constellation](docs/assets/waveforms/qpsk_constellation.svg)
 
 ## How this differs from OptiCommPy
 
