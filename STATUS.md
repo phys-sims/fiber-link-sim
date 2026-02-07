@@ -3,9 +3,9 @@
 > **Source of truth:** Update this file whenever behavior, tests, or schemas change.
 
 ## Last updated
-- Date: 2026-02-10
+- Date: 2026-02-09
 - By: @openai-codex
-- Scope: docs
+- Scope: latency-model/schema/tests/docs
 
 ---
 
@@ -33,7 +33,7 @@
 ## Contract status (spec/result)
 
 ### Schema versions
-- SimulationSpec schema: `simulation_spec.schema.v0.1.json`
+- SimulationSpec schema: `simulation_spec.schema.v0.2.json`
 - SimulationResult schema: `simulation_result.schema.v0.1.json`
 
 ### Example specs (contract validation + runtime)
@@ -70,7 +70,7 @@
 
 ### Docs / ADRs
 - [ ] ADRs for adapter conventions + unit normalization
-- [ ] ADRs for latency model + metrics definitions
+- [x] ADRs for latency model + metrics definitions
 - [ ] Docs synchronized with schema and behavior
 
 ---

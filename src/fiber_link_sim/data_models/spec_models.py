@@ -5,7 +5,7 @@ This file is intended to be the *single source of truth* for runtime validation 
 library boundary. JSON Schema files in src/fiber_physics/schema/ should be generated
 from (or kept consistent with) these models.
 
-v0.1 focuses on:
+v0.2 focuses on:
 - coherent QPSK long-haul (Manakov DP) as the primary target
 - IM/DD OOK and PAM4 as smoke/regression and short-haul baselines
 - deterministic runs via an explicit seed
@@ -241,6 +241,13 @@ class Runtime(BaseModel):
     max_runtime_s: float = Field(..., gt=0)
 
 
+class LatencyModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    serialization_weight: float = Field(..., ge=0)
+    processing_weight: float = Field(..., ge=0)
+    processing_floor_s: float = Field(..., ge=0)
+
+
 ArtifactLevel = Literal["none", "basic", "debug"]
 
 
@@ -261,6 +268,7 @@ class SimulationSpec(BaseModel):
     transceiver: Transceiver
     processing: Processing
     propagation: Propagation
+    latency_model: LatencyModel
     runtime: Runtime
     outputs: Outputs
 
@@ -279,7 +287,7 @@ class SimulationSpec(BaseModel):
                 raise ValueError("signal.n_pol must be 1 for IM/DD formats")
             if self.propagation.model != "scalar_glnse":
                 raise ValueError(
-                    "propagation.model must be 'scalar_glnse' for IM/DD formats in v0.1"
+                    "propagation.model must be 'scalar_glnse' for IM/DD formats in v0.2"
                 )
 
         if self.propagation.model == "manakov" and self.signal.n_pol != 2:

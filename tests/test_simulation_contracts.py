@@ -34,7 +34,7 @@ def test_example_specs_validate() -> None:
     ):
         spec_data = _load_example(filename)
         spec = SimulationSpec.model_validate(spec_data)
-        assert spec.v == "0.1"
+        assert spec.v == "0.2"
 
 
 @pytest.mark.integration

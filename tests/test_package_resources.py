@@ -6,7 +6,7 @@ from importlib import resources
 
 def test_schema_resources_available() -> None:
     base = resources.files("fiber_link_sim") / "schema"
-    spec_path = base / "simulation_spec.schema.v0.1.json"
+    spec_path = base / "simulation_spec.schema.v0.2.json"
     result_path = base / "simulation_result.schema.v0.1.json"
 
     assert spec_path.is_file()
