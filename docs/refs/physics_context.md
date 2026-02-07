@@ -19,6 +19,9 @@ for candidate fiber routes and system configurations.
 4. **Receiver front-end**
    - **Coherent** receiver (primary): LO + mixing + balanced detection + ADC.
    - **IM/DD** receiver (secondary / tests): direct detection + ADC.
+   - ADC behavior: resample the analog waveform to `transceiver.rx.adc.sample_rate_hz` and apply a uniform
+     quantizer with `transceiver.rx.adc.bits` full-scale set by the maximum absolute sample value
+     (complex signals quantize real/imag independently).
 5. **DSP chain**
    - Resampling / timing recovery (as modeled)
    - Matched filtering

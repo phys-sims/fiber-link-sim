@@ -4,18 +4,14 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from optic.comm import metrics as opti_metrics  # type: ignore[import-untyped]
-from optic.models import channels, devices  # type: ignore[import-untyped]
+from optic.models import channels  # type: ignore[import-untyped]
 from optic.models import tx as opti_tx
 
 from fiber_link_sim.adapters.opticommpy import units
 from fiber_link_sim.adapters.opticommpy.dsp import run_dsp_chain
 from fiber_link_sim.adapters.opticommpy.metrics import MetricsOutput, compute_metrics
-from fiber_link_sim.adapters.opticommpy.param_builders import (
-    build_channel_params,
-    build_lo_params,
-    build_pd_params,
-    build_tx_params,
-)
+from fiber_link_sim.adapters.opticommpy.param_builders import build_channel_params, build_tx_params
+from fiber_link_sim.adapters.opticommpy.rx import run_rx_frontend
 from fiber_link_sim.adapters.opticommpy.types import (
     ChannelOutput,
     DspOutput,
@@ -89,16 +85,7 @@ class ChannelAdapter:
 @dataclass(slots=True)
 class RxFrontEndAdapter:
     def run(self, spec: SimulationSpec, signal: np.ndarray, seed: int) -> RxOutput:
-        if spec.transceiver.rx.coherent:
-            lo_param = build_lo_params(spec, seed, signal.shape[0])
-            lo = devices.basicLaserModel(lo_param)
-            pd_param = build_pd_params(spec, seed)
-            samples = devices.pdmCoherentReceiver(signal, lo, param=pd_param)
-            return RxOutput(samples=samples, params={"lo_power_dbm": lo_param.P})
-
-        pd_param = build_pd_params(spec, seed)
-        current = devices.photodiode(signal, pd_param)
-        return RxOutput(samples=current, params={"pd_bandwidth_hz": pd_param.B})
+        return run_rx_frontend(spec, signal, seed)
 
 
 @dataclass(slots=True)

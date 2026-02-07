@@ -103,3 +103,34 @@ def test_qpsk_longhaul_effects_toggle_impact() -> None:
     assert result_off.summary.osnr_db is None
     assert result_on.summary.osnr_db is not None
     assert isfinite(result_on.summary.osnr_db)
+
+
+@pytest.mark.integration
+@pytest.mark.opticommpy
+@pytest.mark.slow
+def test_adc_bit_depth_impacts_metrics() -> None:
+    base = _load_example("qpsk_longhaul_1span.json")
+    base["propagation"]["effects"] = {
+        "dispersion": False,
+        "nonlinearity": False,
+        "ase": False,
+        "pmd": False,
+        "env_effects": False,
+    }
+    base["transceiver"]["rx"]["noise"] = {"thermal": False, "shot": False}
+
+    spec_low = copy.deepcopy(base)
+    spec_low["transceiver"]["rx"]["adc"]["bits"] = 4
+    spec_high = copy.deepcopy(base)
+    spec_high["transceiver"]["rx"]["adc"]["bits"] = 8
+
+    result_low = simulate(spec_low)
+    result_high = simulate(spec_high)
+
+    assert result_low.status == "success"
+    assert result_high.status == "success"
+    assert result_low.summary is not None
+    assert result_high.summary is not None
+
+    assert result_low.summary.evm_rms >= result_high.summary.evm_rms
+    assert result_low.summary.errors.pre_fec_ber >= result_high.summary.errors.pre_fec_ber
