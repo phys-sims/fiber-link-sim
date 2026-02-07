@@ -17,6 +17,9 @@ A typical sequential pipeline:
 Each stage should accept a stable `State` object and its own `StageConfig` (derived from sections of `SimulationSpec`),
 and return a `StageResult` (state + scalar metrics + optional artifacts).
 
+In this repo, the concrete `SimulationState` and stage configs now *inherit from phys-pipeline base types* to ensure
+compatibility with phys-pipeline optimizers and caching tools.
+
 ## What is `State`?
 
 **Rule:** the *type* of State stays constant across stages; fields are gradually populated.

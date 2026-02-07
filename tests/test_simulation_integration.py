@@ -6,7 +6,6 @@ from pathlib import Path
 
 from fiber_link_sim.simulate import simulate
 
-
 EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
 
 

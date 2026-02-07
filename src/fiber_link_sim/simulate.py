@@ -16,7 +16,7 @@ from fiber_link_sim.data_models.spec_models import (
     Summary,
 )
 from fiber_link_sim.pipeline import build_pipeline
-from fiber_link_sim.stages.base import StageResult, State
+from fiber_link_sim.stages.base import SimulationState
 from fiber_link_sim.utils import compute_spec_hash
 
 SIM_VERSION = "0.1.0"
@@ -52,23 +52,21 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
             ),
         )
 
-    state = State(
+    state = SimulationState(
         meta={
             "seed": spec_model.runtime.seed,
             "spec_hash": compute_spec_hash(spec_model),
             "version": SIM_VERSION,
         }
     )
-    warnings: list[str] = []
-    artifacts: list[dict[str, Any]] = []
-    summary: Summary | None = None
-    for stage in build_pipeline(spec_model):
-        result: StageResult = stage.run(state)
-        state = result.state
-        warnings.extend(result.warnings)
-        artifacts.extend(result.artifacts)
-        if stage.name == "metrics":
-            summary = Summary.model_validate(result.metrics)
+
+    pipeline = build_pipeline(spec_model)
+    pipeline.run(state)
+
+    warnings = state.meta.get("warnings", [])
+    artifacts = state.artifacts
+    summary_payload = state.stats.get("summary")
+    summary = Summary.model_validate(summary_payload) if summary_payload else None
 
     runtime_s = time.perf_counter() - start
     return SimulationResult(

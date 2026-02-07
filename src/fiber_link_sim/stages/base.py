@@ -1,11 +1,22 @@
 from __future__ import annotations
 
+import copy
+import hashlib
 from dataclasses import dataclass, field
 from typing import Any
 
+import numpy as np
+from phys_pipeline import (  # type: ignore[import-untyped]
+    PipelineStage,
+    StageConfig,
+    StageResult,
+    State,
+)
+from phys_pipeline.types import hash_ndarray, hash_small  # type: ignore[import-untyped]
+
 
 @dataclass(slots=True)
-class State:
+class SimulationState(State):
     meta: dict[str, Any] = field(default_factory=dict)
     tx: dict[str, Any] = field(default_factory=dict)
     optical: dict[str, Any] = field(default_factory=dict)
@@ -13,17 +24,35 @@ class State:
     stats: dict[str, Any] = field(default_factory=dict)
     artifacts: list[dict[str, Any]] = field(default_factory=list)
 
+    def deepcopy(self) -> SimulationState:
+        return copy.deepcopy(self)
 
-@dataclass(slots=True)
-class StageResult:
-    state: State
-    metrics: dict[str, Any] = field(default_factory=dict)
-    warnings: list[str] = field(default_factory=list)
-    artifacts: list[dict[str, Any]] = field(default_factory=list)
+    def hashable_repr(self) -> bytes:
+        h = hashlib.sha256()
+        for payload in (self.meta, self.tx, self.optical, self.rx, self.stats):
+            h.update(_hash_payload(payload))
+        return h.digest()
 
 
-class Stage:
+class Stage(PipelineStage[SimulationState, StageConfig]):
     name: str = "stage"
 
-    def run(self, state: State) -> StageResult:
-        raise NotImplementedError
+
+def _hash_payload(payload: Any) -> bytes:
+    if isinstance(payload, np.ndarray):
+        return hash_ndarray(payload)
+    if isinstance(payload, dict):
+        h = hashlib.sha256()
+        for key in sorted(payload.keys()):
+            h.update(str(key).encode())
+            h.update(_hash_payload(payload[key]))
+        return h.digest()
+    if isinstance(payload, (list, tuple)):
+        h = hashlib.sha256()
+        for item in payload:
+            h.update(_hash_payload(item))
+        return h.digest()
+    return hash_small(payload)
+
+
+__all__ = ["SimulationState", "Stage", "StageConfig", "StageResult"]

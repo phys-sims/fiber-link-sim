@@ -270,6 +270,9 @@ OptiCommPy metrics support includes:
 #### FEC (LDPC)
 OptiCommPy provides `encodeLDPC(bits,param)` and `decodeLDPC(llrs,param)` plus SPA/MSA decoders and ALIST helpers. citeturn20search0turn20search4turn20search2
 
+**Current v0.1 note:** LDPC decoding requires parity-check matrices that are not yet part of the public schema. The FEC stage therefore
+uses a deterministic approximation and emits a warning when FEC is enabled (see ADR-0003).
+
 **Two ways to do “post-FEC bitrate”:**
 
 **Option 1 — threshold approximation (fast, good for UI iteration)**
