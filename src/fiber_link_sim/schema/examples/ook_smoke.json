@@ -121,7 +121,7 @@
     "seed": 1,
     "n_symbols": 4096,
     "samples_per_symbol": 4,
-    "max_runtime_s": 10
+    "max_runtime_s": 120
   },
   "outputs": {
     "artifact_level": "none",

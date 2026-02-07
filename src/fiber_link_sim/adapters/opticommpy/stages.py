@@ -25,6 +25,7 @@ from fiber_link_sim.data_models.spec_models import DspBlock, SimulationSpec
 @dataclass(slots=True)
 class TxAdapter:
     def run(self, spec: SimulationSpec, seed: int) -> TxOutput:
+        np.random.seed(seed)
         if spec.signal.format == "coherent_qpsk":
             param = build_tx_params(spec, seed, "coherent")
             signal, symbols, param_out = opti_tx.simpleWDMTx(param)
@@ -40,6 +41,7 @@ class TxAdapter:
 @dataclass(slots=True)
 class ChannelAdapter:
     def run(self, spec: SimulationSpec, signal: object, seed: int) -> ChannelOutput:
+        np.random.seed(seed)
         param, layout = build_channel_params(spec, seed)
 
         if spec.signal.format == "coherent_qpsk":
@@ -85,6 +87,7 @@ class ChannelAdapter:
 @dataclass(slots=True)
 class RxFrontEndAdapter:
     def run(self, spec: SimulationSpec, signal: np.ndarray, seed: int) -> RxOutput:
+        np.random.seed(seed)
         return run_rx_frontend(spec, signal, seed)
 
 

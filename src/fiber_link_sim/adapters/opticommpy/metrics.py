@@ -39,10 +39,14 @@ def compute_metrics(symb_rx: np.ndarray, symb_tx: np.ndarray, signal: Signal) ->
         pre_fec_ber = float(opti_metrics.theoryBER(order, ebn0_db, theory_const))
 
     return MetricsOutput(
-        pre_fec_ber=pre_fec_ber,
-        snr_db=snr_db,
-        evm_rms=float(np.sqrt(evm_mean)),
+        pre_fec_ber=_quantize(pre_fec_ber),
+        snr_db=_quantize(snr_db),
+        evm_rms=_quantize(float(np.sqrt(evm_mean))),
     )
+
+
+def _quantize(value: float, decimals: int = 6) -> float:
+    return float(np.round(value, decimals))
 
 
 def _const_type(signal: Signal) -> str:
