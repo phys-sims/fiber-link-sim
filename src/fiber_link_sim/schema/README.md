@@ -72,7 +72,9 @@ Front-end assumptions:
 - `tx.launch_power_dbm`: launch power per channel
 - `rx.coherent`: must match modulation format (enforced by schema)
 - `rx.lo_linewidth_hz`: LO phase noise (coherent)
-- `rx.adc.sample_rate_hz`, `rx.adc.bits`: digital sampling assumptions
+- `rx.adc.sample_rate_hz`, `rx.adc.bits`: digital sampling assumptions. The receiver front-end
+  resamples the waveform to `sample_rate_hz` and applies a uniform quantizer with `bits` levels
+  (full-scale is set by the maximum absolute sample magnitude; complex signals quantize I/Q separately).
 - `rx.noise.thermal`, `rx.noise.shot`: toggle photodetection noise sources
 
 ### `processing`
