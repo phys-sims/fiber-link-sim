@@ -41,7 +41,7 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
     except (ValidationError, OSError, json.JSONDecodeError) as exc:
         runtime_s = time.perf_counter() - start
         return SimulationResult(
-            v="v0.1",
+            v="v0.2",
             status="error",
             error=ErrorInfo(code="validation_error", message=str(exc)),
             provenance=Provenance(

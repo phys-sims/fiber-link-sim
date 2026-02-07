@@ -10,7 +10,7 @@ If agents touch anything, **they should not change the meaning of fields silentl
 
 Authoritative copies ship with the package:
 
-- `src/fiber_link_sim/schema/simulation_spec.schema.v0.1.json`
+- `src/fiber_link_sim/schema/simulation_spec.schema.v0.2.json`
 - `src/fiber_link_sim/schema/simulation_result.schema.v0.1.json`
 
 A human-facing mirror can exist at repo root (`schema/`) but should be generated from the authoritative copy, not hand-edited.
@@ -36,7 +36,7 @@ It must not change physics.
 A link is a sequence of segments:
 - `segments[i].length_m` contributes to propagation delay and span loss.
 - `segments[i].temp_c` is available for future environment modeling (only applied if `propagation.effects.env_effects = true`).
-- `geo.enabled` and `geo.polyline_wgs84` exist for the routing product; physics can ignore them in v0.1.
+- `geo.enabled` and `geo.polyline_wgs84` exist for the routing product; physics can ignore them in v0.2.
 
 ### `fiber`
 Physical medium parameters:
@@ -88,11 +88,17 @@ User-configurable DSP and FEC chain.
 ### `propagation`
 How fiber propagation is simulated.
 - `model`: scalar_glnse or manakov
-- `backend`: backend identifier (v0.1 supports builtin_ssfm only)
+- `backend`: backend identifier (v0.2 supports builtin_ssfm only)
 - `effects`: toggles (dispersion, nonlinearity, ase, pmd, env_effects)
   - **Implementation:** dispersion → OptiCommPy `D`, nonlinearity → `gamma`, ASE → EDFA vs ideal amp; PMD/env toggles
     are wired into adapter parameters for future modeling.
 - `ssfm`: numerical step size controls (dz_m, step_adapt)
+
+### `latency_model`
+Controls how latency is broken down in the Metrics stage.
+- `serialization_weight`: multiplier on serialization delay derived from total bits and symbol rate.
+- `processing_weight`: multiplier applied to `runtime.n_symbols / signal.symbol_rate_baud` to estimate processing time.
+- `processing_floor_s`: minimum processing latency applied even for tiny runs.
 
 ### `runtime`
 Controls reproducibility and compute.

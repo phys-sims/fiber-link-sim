@@ -178,11 +178,19 @@ class MetricsStage(Stage):
         total_length_m = float(state.optical.get("total_length_m", 0.0))
         bits_per_symbol_val = int(state.stats.get("bits_per_symbol", 1))
         total_bits = int(state.tx.get("total_bits", 0))
+        latency_model = spec.latency_model
 
         c_m_s = 299_792_458.0
         propagation_s = total_length_m / (c_m_s / spec.fiber.n_group)
-        serialization_s = total_bits / (spec.signal.symbol_rate_baud * bits_per_symbol_val)
-        processing_est_s = max(1e-6, spec.runtime.n_symbols / spec.signal.symbol_rate_baud * 0.1)
+        serialization_s = (
+            total_bits
+            / (spec.signal.symbol_rate_baud * bits_per_symbol_val)
+            * latency_model.serialization_weight
+        )
+        processing_est_s = max(
+            latency_model.processing_floor_s,
+            spec.runtime.n_symbols / spec.signal.symbol_rate_baud * latency_model.processing_weight,
+        )
         total_latency_s = propagation_s + serialization_s + processing_est_s
 
         raw_line_rate = spec.signal.symbol_rate_baud * bits_per_symbol_val
