@@ -14,6 +14,9 @@ dependencies = [
   "phys-pipeline",
   "OptiCommPy",
 ]
+
+[project.scripts]
+fiber-link-sim = "fiber_link_sim.cli:main"
 [project.optional-dependencies]
 dev = [
   # test & tooling you actually run locally
@@ -36,7 +39,7 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-fiber_link_sim = ["schema/**"]
+fiber_link_sim = ["schema/*.json", "schema/README.md", "schema/examples/*.json"]
 
 # --- Black ---
 [tool.black]
