@@ -3,9 +3,9 @@
 > **Source of truth:** Update this file whenever behavior, tests, or schemas change.
 
 ## Last updated
-- Date: YYYY-MM-DD
-- By: @your-handle
-- Scope: (docs/behavior/tests/schemas/infra)
+- Date: 2026-02-07
+- By: @openai-codex
+- Scope: docs/behavior/tests
 
 ---
 
@@ -55,7 +55,7 @@
 - [ ] ChannelStage parity (fiber propagation, span loss, amplifier behavior)
 - [ ] RxFrontEndStage parity (coherent + IM/DD front-ends)
 - [ ] DSPStage parity (CD compensation, EQ, CPR, timing)
-- [ ] FECStage parity (optional decode, throughput accounting)
+- [x] FECStage parity (optional decode, throughput accounting)
 - [ ] MetricsStage parity (BER/FER, OSNR/ESNR proxies, latency)
 
 ### OptiCommPy adapter

@@ -134,3 +134,14 @@ def test_adc_bit_depth_impacts_metrics() -> None:
 
     assert result_low.summary.evm_rms >= result_high.summary.evm_rms
     assert result_low.summary.errors.pre_fec_ber >= result_high.summary.errors.pre_fec_ber
+
+
+@pytest.mark.integration
+@pytest.mark.opticommpy
+@pytest.mark.slow
+def test_qpsk_fec_reduces_or_matches_ber() -> None:
+    spec = _load_example("qpsk_longhaul_1span.json")
+    result = simulate(spec)
+    assert result.status == "success"
+    assert result.summary is not None
+    assert result.summary.errors.post_fec_ber <= result.summary.errors.pre_fec_ber

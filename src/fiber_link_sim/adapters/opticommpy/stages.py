@@ -3,9 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
-from optic.comm import metrics as opti_metrics  # type: ignore[import-untyped]
+from optic.comm import fec as opti_fec  # type: ignore[import-untyped]
+from optic.comm import metrics as opti_metrics
+from optic.comm import modulation
 from optic.models import channels  # type: ignore[import-untyped]
 from optic.models import tx as opti_tx
+from optic.utils import parameters  # type: ignore[import-untyped]
 
 from fiber_link_sim.adapters.opticommpy import units
 from fiber_link_sim.adapters.opticommpy.dsp import run_dsp_chain
@@ -99,14 +102,90 @@ class DSPAdapter:
 
 @dataclass(slots=True)
 class FECAdapter:
-    def run(self, spec: SimulationSpec, pre_fec_ber: float) -> FecOutput:
-        if spec.processing.fec.enabled:
-            code_rate = spec.processing.fec.code_rate
-            post_fec_ber = max(pre_fec_ber * (1.0 - code_rate) * 0.2, 1e-12)
-        else:
+    def run(
+        self,
+        spec: SimulationSpec,
+        tx_symbols: np.ndarray,
+        llrs: np.ndarray | None,
+        hard_bits: np.ndarray | None,
+        pre_fec_ber: float,
+    ) -> FecOutput:
+        if not spec.processing.fec.enabled:
             post_fec_ber = pre_fec_ber
-        fer = min(1.0, post_fec_ber * 10.0)
+            fer = min(1.0, post_fec_ber * 10.0)
+            return FecOutput(post_fec_ber=post_fec_ber, fer=fer)
+        if spec.processing.fec.scheme != "ldpc":
+            raise ValueError(f"unsupported FEC scheme: {spec.processing.fec.scheme}")
+        if llrs is None and hard_bits is None:
+            raise ValueError("FEC enabled but DSP demap produced no LLRs or hard bits")
+
+        ldpc_params = _build_ldpc_params(spec.processing.fec.params)
+        llr_vector = _prepare_llrs(llrs, hard_bits)
+        tx_bits = _tx_bits_from_symbols(tx_symbols, spec)
+        n_bits = min(llr_vector.shape[0], tx_bits.shape[0])
+        n_codeword = ldpc_params.H.shape[1]
+        n_codewords = n_bits // n_codeword
+        if n_codewords < 1:
+            raise ValueError("insufficient bits to form an LDPC codeword")
+
+        trim_len = n_codewords * n_codeword
+        llr_vector = llr_vector[:trim_len]
+        tx_bits = tx_bits[:trim_len]
+        llr_matrix = llr_vector.reshape(n_codewords, n_codeword).T
+        decoded_bits, _ = opti_fec.decodeLDPC(llr_matrix, ldpc_params)
+        decoded_bits = np.asarray(decoded_bits).astype(int)
+        decoded_vector = decoded_bits.T.reshape(-1)
+
+        bit_errors = decoded_vector != tx_bits
+        post_fec_ber = float(np.mean(bit_errors))
+        fer = float(np.mean(bit_errors.reshape(n_codewords, n_codeword).any(axis=1)))
         return FecOutput(post_fec_ber=post_fec_ber, fer=fer)
+
+
+def _build_ldpc_params(params: dict[str, object]) -> parameters:
+    if "H" not in params:
+        raise ValueError("processing.fec.params.H is required for LDPC decoding")
+    matrix = np.asarray(params["H"])
+    if matrix.ndim != 2:
+        raise ValueError("processing.fec.params.H must be a 2D parity-check matrix")
+    ldpc_params = parameters()
+    ldpc_params.H = matrix.astype(int)
+    raw_max_iter = params.get("max_iter", params.get("max_iters", 25))
+    if isinstance(raw_max_iter, (int, float, np.integer, np.floating, str)):
+        ldpc_params.maxIter = int(raw_max_iter)
+    else:
+        ldpc_params.maxIter = 25
+    ldpc_params.alg = str(params.get("alg", "SPA"))
+    prec = params.get("prec", np.float32)
+    if isinstance(prec, str):
+        prec = getattr(np, prec)
+    ldpc_params.prec = prec
+    return ldpc_params
+
+
+def _prepare_llrs(
+    llrs: np.ndarray | None, hard_bits: np.ndarray | None, magnitude: float = 5.0
+) -> np.ndarray:
+    if llrs is not None:
+        return np.asarray(llrs).reshape(-1).astype(np.float32)
+    if hard_bits is None:
+        raise ValueError("missing LLRs and hard bits for FEC decoding")
+    hard_bits = np.asarray(hard_bits).reshape(-1).astype(int)
+    return np.where(hard_bits == 0, magnitude, -magnitude).astype(np.float32)
+
+
+def _tx_bits_from_symbols(tx_symbols: np.ndarray, spec: SimulationSpec) -> np.ndarray:
+    order, const_type = _constellation_params(spec.signal.format)
+    symbols = np.asarray(tx_symbols).reshape(-1)
+    return modulation.demodulateGray(symbols, order, const_type).astype(int)
+
+
+def _constellation_params(signal_format: str) -> tuple[int, str]:
+    if signal_format == "coherent_qpsk":
+        return 4, "psk"
+    if signal_format == "imdd_ook":
+        return 2, "ook"
+    return 4, "pam"
 
 
 @dataclass(slots=True)

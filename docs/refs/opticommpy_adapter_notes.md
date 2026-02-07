@@ -270,22 +270,16 @@ OptiCommPy metrics support includes:
 #### FEC (LDPC)
 OptiCommPy provides `encodeLDPC(bits,param)` and `decodeLDPC(llrs,param)` plus SPA/MSA decoders and ALIST helpers. citeturn20search0turn20search4turn20search2
 
-**Current v0.1 note:** LDPC decoding requires parity-check matrices that are not yet part of the public schema. The FEC stage therefore
-uses a deterministic approximation and emits a warning when FEC is enabled (see ADR-0003).
+**Current v0.1 behavior:** the adapter performs **actual LDPC decode** using `decodeLDPC` when FEC is enabled and the parity-check
+matrix is supplied. Soft bits (LLRs) are preferred; hard bits are converted to fixed-magnitude LLRs as a fallback.
 
-**Two ways to do “post-FEC bitrate”:**
+**Required `processing.fec.params` payload (LDPC decode):**
+- `H`: parity-check matrix (2D list/array, shape `m x n`).
+- `max_iter` (or legacy `max_iters`): maximum decoder iterations (int).
+- `alg`: decoding algorithm (`"SPA"` or `"MSA"`).
+- `prec` (optional): numeric precision (defaults to `np.float32`).
 
-**Option 1 — threshold approximation (fast, good for UI iteration)**
-- Compute pre-FEC BER or GMI.
-- Apply a chosen FEC threshold curve (stored in our repo) to estimate whether decoding would succeed.
-- Report “net bitrate = gross bitrate × (1 - overhead)” if success else 0 (or “not decodable”).
-
-**Option 2 — actual decode (slower, more “physics”)**
-- Compute LLRs via `calcLLR`.
-- Run `decodeLDPC` with a selected code.
-- Measure post-FEC BER directly from decoded bits.
-
-The adapter should support both; MCP just selects `fec.mode = 'estimate' | 'simulate'`.
+Post-FEC BER/FER are measured directly from decoded bits against the transmitted coded bits for deterministic validation.
 
 ---
 
