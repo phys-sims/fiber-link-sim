@@ -4,6 +4,7 @@ from phys_pipeline import SequentialPipeline  # type: ignore[import-untyped]
 
 from fiber_link_sim.data_models.spec_models import SimulationSpec
 from fiber_link_sim.stages.configs import (
+    ArtifactsStageConfig,
     ChannelStageConfig,
     DSPStageConfig,
     FECStageConfig,
@@ -12,6 +13,7 @@ from fiber_link_sim.stages.configs import (
     TxStageConfig,
 )
 from fiber_link_sim.stages.core import (
+    ArtifactsStage,
     ChannelStage,
     DSPStage,
     FECStage,
@@ -29,5 +31,6 @@ def build_pipeline(spec: SimulationSpec) -> SequentialPipeline:
         DSPStage(cfg=DSPStageConfig(spec=spec)),
         FECStage(cfg=FECStageConfig(spec=spec)),
         MetricsStage(cfg=MetricsStageConfig(spec=spec)),
+        ArtifactsStage(cfg=ArtifactsStageConfig(spec=spec)),
     ]
     return SequentialPipeline(stages, name="fiber_link_sim")

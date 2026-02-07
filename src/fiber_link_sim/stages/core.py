@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import log10
+from pathlib import Path
+
+import numpy as np
 
 from fiber_link_sim.adapters.opticommpy import ADAPTERS
 from fiber_link_sim.stages.base import SimulationState, Stage, StageResult
 from fiber_link_sim.stages.configs import (
+    ArtifactsStageConfig,
     ChannelStageConfig,
     DSPStageConfig,
     FECStageConfig,
@@ -205,6 +209,49 @@ class MetricsStage(Stage):
         return StageResult(state=state)
 
 
+@dataclass(slots=True)
+class ArtifactsStage(Stage):
+    cfg: ArtifactsStageConfig
+    name: str = "artifacts"
+
+    def process(self, state: SimulationState, *, policy: object | None = None) -> StageResult:
+        spec = self.cfg.spec
+        if spec.outputs.artifact_level == "none":
+            return StageResult(state=state)
+
+        if not spec.outputs.return_waveforms:
+            return StageResult(state=state)
+
+        artifact_root = Path("artifacts") / str(state.meta.get("spec_hash", "unknown"))
+        artifact_root.mkdir(parents=True, exist_ok=True)
+
+        waveforms: list[tuple[str, np.ndarray | None]] = [
+            ("tx_waveform", state.tx.get("waveform")),
+            ("optical_waveform", state.optical.get("waveform")),
+            ("rx_samples", state.rx.get("samples")),
+        ]
+
+        for name, waveform in waveforms:
+            if waveform is None:
+                continue
+            payload = np.asarray(waveform)
+            filename = f"{name}.npz"
+            path = artifact_root / filename
+            np.savez_compressed(path, data=payload)
+            ref = f"artifact://{artifact_root.name}/{filename}"
+            state.artifacts.append(
+                {
+                    "name": name,
+                    "type": "npz",
+                    "ref": ref,
+                    "mime": "application/octet-stream",
+                    "bytes": path.stat().st_size,
+                }
+            )
+
+        return StageResult(state=state)
+
+
 __all__ = [
     "TxStage",
     "ChannelStage",
@@ -212,4 +259,5 @@ __all__ = [
     "DSPStage",
     "FECStage",
     "MetricsStage",
+    "ArtifactsStage",
 ]
