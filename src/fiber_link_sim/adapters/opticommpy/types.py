@@ -30,6 +30,7 @@ class RxOutput:
 
 @dataclass(slots=True)
 class DspOutput:
+    samples: np.ndarray
     symbols: np.ndarray
     params: dict[str, Any]
     hard_bits: np.ndarray | None = None

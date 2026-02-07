@@ -139,22 +139,36 @@ baseline implementation decisions.
 - `alg`: `"SPA"` or `"MSA"` decoder selection.
 - `prec` (optional): numeric precision (defaults to `np.float32`).
 
-### MetricsStage (BER/FER/OSNR/latency + artifacts)
+### MetricsStage (BER/FER/OSNR/latency)
 
 **Required capabilities**
 
 | Capability | Spec fields | Notes |
 | --- | --- | --- |
-| Artifact recording | `outputs.artifact_level`, `outputs.return_waveforms` | Controls waveform/constellation artifacts. |
 | Run-time bounds | `runtime.max_runtime_s` | Used to enforce simulation runtime policy. |
 | Deterministic metrics | `runtime.seed` | Metrics should be reproducible with fixed seed. |
 
 **Acceptance criteria**
 
 - **Inputs:** stage outputs (DSP/FEC), `outputs`, `runtime`.
-- **Outputs:** scalar metrics (BER/FER/OSNR/EVM), latency breakdown, and optional artifacts.
+- **Outputs:** scalar metrics (BER/FER/OSNR/EVM) and latency breakdown.
 - **Metrics:** required fields must be finite and within valid ranges (e.g., BER in [0,1]).
 - **Determinism:** same seed/spec → identical summary metrics (within tolerance).
+
+### ArtifactsStage (waveforms + diagnostics)
+
+**Required capabilities**
+
+| Capability | Spec fields | Notes |
+| --- | --- | --- |
+| Artifact recording | `outputs.artifact_level`, `outputs.return_waveforms` | Controls waveform/constellation artifacts. |
+| Deterministic emission | `runtime.seed` | Same inputs → same artifact payloads. |
+
+**Acceptance criteria**
+
+- **Inputs:** stage outputs (Tx/Channel/Rx/DSP), `outputs`.
+- **Outputs:** artifact references (NPZ) for waveforms and diagnostics.
+- **Determinism:** same seed/spec → identical artifact names and shapes.
 
 ## Sanity Checks
 
@@ -188,14 +202,14 @@ waveforms or dense per-sample traces unless explicitly requested by `outputs.ret
 
 **Artifact list (and stage ownership)**
 
-- **Constellation** — produced in **DSPStage** (post-equalization / post-CPR), recorded in **MetricsStage**.
+- **Constellation** — produced in **DSPStage** (post-equalization / post-CPR), recorded in **ArtifactsStage**.
+- **Phase error trace** — produced in **DSPStage** (CPR residuals), recorded in **ArtifactsStage**.
 - **Eye diagram** — produced in **RxFrontEndStage** (sampled electrical waveform) or **DSPStage** (post-matched-filter),
-  recorded in **MetricsStage**.
+  recorded in **ArtifactsStage**.
 - **PSD / spectrum** — produced in **TxStage** (launch spectrum) and **ChannelStage** (after spans), recorded in
-  **MetricsStage**.
+  **ArtifactsStage**.
 - **OSNR-vs-span** — produced in **ChannelStage** (span-by-span metrics), recorded in **MetricsStage**.
 - **EVM-vs-distance** — produced in **DSPStage** (per-span or per-segment EVM snapshots), recorded in **MetricsStage**.
-- **Phase error trace** — produced in **DSPStage** (CPR residuals), recorded in **MetricsStage**.
 - **BER waterfall** — produced in **MetricsStage** (aggregate across runs or sweeps), recorded in **MetricsStage**.
 
 ## Coverage alignment with existing docs

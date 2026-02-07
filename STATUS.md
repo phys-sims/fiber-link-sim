@@ -3,9 +3,9 @@
 > **Source of truth:** Update this file whenever behavior, tests, or schemas change.
 
 ## Last updated
-- Date: 2026-02-07
+- Date: 2026-02-08
 - By: @openai-codex
-- Scope: docs/behavior/tests
+- Scope: artifacts/behavior/tests/docs
 
 ---
 
@@ -13,9 +13,9 @@
 
 | Check | Command | Status | Last run | Notes |
 | --- | --- | --- | --- | --- |
-| Pre-commit (lint/format) | `python -m pre_commit run -a` | ☐ | YYYY-MM-DD |  |
-| Type checking (mypy) | `python -m mypy src` | ☐ | YYYY-MM-DD |  |
-| Pytest fast + coverage | `python -m pytest -q -m "not slow" --durations=10 --cov=fiber_link_sim --cov-report=term-missing:skip-covered` | ☐ | YYYY-MM-DD |  |
+| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-08 |  |
+| Type checking (mypy) | `python -m mypy src` | ✅ | 2026-02-08 |  |
+| Pytest fast | `python -m pytest -q -m "not slow" --durations=10` | ✅ | 2026-02-08 |  |
 | Pytest slow | `python -m pytest -q -m slow --durations=10` | ☐ | YYYY-MM-DD |  |
 
 ---

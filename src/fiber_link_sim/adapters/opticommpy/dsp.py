@@ -160,7 +160,7 @@ def run_dsp_chain(spec: SimulationSpec, samples: np.ndarray, blocks: list[DspBlo
     if demap_enabled:
         order, const_type = _constellation_params(spec.signal.format)
         hard_bits, llrs = _demap_symbols(symbols, order, const_type, demap_soft)
-    return DspOutput(symbols=symbols, params=params, hard_bits=hard_bits, llrs=llrs)
+    return DspOutput(samples=out, symbols=symbols, params=params, hard_bits=hard_bits, llrs=llrs)
 
 
 def _downsample(samples: np.ndarray, sps: int) -> np.ndarray:

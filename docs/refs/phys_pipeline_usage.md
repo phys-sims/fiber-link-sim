@@ -13,6 +13,7 @@ A typical sequential pipeline:
 4. **DSPStage**: DSP chain (filtering, CD comp, equalization, CPR, demap) → bits/LLRs
 5. **FECStage**: LDPC decode (optional) → post-FEC bits/errors
 6. **MetricsStage**: compute BER/FER/OSNR/EVM and latency breakdown
+7. **ArtifactsStage**: serialize waveforms/diagnostics to NPZ and emit artifact refs
 
 Each stage should accept a stable `State` object and its own `StageConfig` (derived from sections of `SimulationSpec`),
 and return a `StageResult` (state + scalar metrics + optional artifacts).
@@ -53,6 +54,7 @@ This keeps State small and hashable, allowing stage-level caching to work as int
 - DSPStageConfig <- `processing.dsp_chain`
 - FECStageConfig <- `processing.fec`
 - MetricsStageConfig <- `outputs` + latency accounting rules
+- ArtifactsStageConfig <- `outputs`
 
 ## Determinism
 
@@ -64,9 +66,14 @@ shot), the same spec+seed must reproduce identical results.
 ## Artifacts vs metrics
 
 - Metrics: small scalars (BER, OSNR, latency numbers).
-- Artifacts: waveforms/constellations/eye diagrams/NPZ dumps.
+- Artifacts: waveforms/constellations/eye diagrams/PSD/NPZ dumps.
 
 Keep arrays out of metrics to avoid bloating JSON and breaking downstream consumers.
+
+Artifacts are emitted by **ArtifactsStage** after the main pipeline stages have populated State:
+- **TxStage/ChannelStage** → PSD (`tx_psd`, `channel_psd`)
+- **RxFrontEndStage** → eye diagram (`rx_eye`)
+- **DSPStage** → constellation, phase error, DSP eye (`dsp_constellation`, `dsp_phase_error`, `dsp_eye`)
 
 ## Suggested repo layout (src-style)
 
