@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 import numpy as np
 from optic.comm import metrics as opti_metrics  # type: ignore[import-untyped]
-from optic.models import channels, devices, tx as opti_tx  # type: ignore[import-untyped]
+from optic.models import channels, devices  # type: ignore[import-untyped]
+from optic.models import tx as opti_tx
 
 from fiber_link_sim.adapters.opticommpy import units
 from fiber_link_sim.adapters.opticommpy.dsp import run_dsp_chain
@@ -15,7 +16,13 @@ from fiber_link_sim.adapters.opticommpy.param_builders import (
     build_pd_params,
     build_tx_params,
 )
-from fiber_link_sim.adapters.opticommpy.types import ChannelOutput, DspOutput, FecOutput, RxOutput, TxOutput
+from fiber_link_sim.adapters.opticommpy.types import (
+    ChannelOutput,
+    DspOutput,
+    FecOutput,
+    RxOutput,
+    TxOutput,
+)
 from fiber_link_sim.data_models.spec_models import DspBlock, SimulationSpec
 
 
@@ -107,7 +114,9 @@ class FECAdapter:
 
 @dataclass(slots=True)
 class MetricsAdapter:
-    def compute(self, symb_rx: np.ndarray, symb_tx: np.ndarray, spec: SimulationSpec) -> MetricsOutput:
+    def compute(
+        self, symb_rx: np.ndarray, symb_tx: np.ndarray, spec: SimulationSpec
+    ) -> MetricsOutput:
         return compute_metrics(symb_rx, symb_tx, spec.signal)
 
 
