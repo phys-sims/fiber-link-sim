@@ -8,7 +8,9 @@ from fiber_link_sim.artifacts import LocalArtifactStore, artifact_root_for_spec
 from fiber_link_sim.stages.base import SimulationState
 
 
-def _build_state(root: Path, *, seed: int, waveform: np.ndarray, symbols: np.ndarray) -> SimulationState:
+def _build_state(
+    root: Path, *, seed: int, waveform: np.ndarray, symbols: np.ndarray
+) -> SimulationState:
     store = LocalArtifactStore(artifact_root_for_spec("spec", base_dir=root))
     state = SimulationState(meta={"seed": seed}, artifact_store=store)
     state.store_signal("tx", "waveform", waveform)

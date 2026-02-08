@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from contextlib import contextmanager
 from collections.abc import Generator
+from contextlib import contextmanager
 
 import numpy as np
 
@@ -26,7 +26,9 @@ def derive_stage_rng(seed: int, stage_name: str) -> np.random.Generator:
 
 
 @contextmanager
-def preserve_numpy_random_state(seed: int | None = None) -> Generator[np.random.RandomState, None, None]:
+def preserve_numpy_random_state(
+    seed: int | None = None,
+) -> Generator[np.random.RandomState]:
     state = np.random.get_state()
     if seed is not None:
         seeded = np.random.RandomState(seed)

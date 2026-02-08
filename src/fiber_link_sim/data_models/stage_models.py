@@ -22,8 +22,7 @@ if TYPE_CHECKING:
 
 class SignalSpec(Protocol):
     @property
-    def signal(self) -> Signal:
-        ...
+    def signal(self) -> Signal: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,7 +32,7 @@ class TxSpecSlice:
     transceiver: Transceiver
 
     @classmethod
-    def from_spec(cls, spec: "SimulationSpec") -> "TxSpecSlice":
+    def from_spec(cls, spec: SimulationSpec) -> TxSpecSlice:
         return cls(
             runtime=spec.runtime.model_copy(deep=True),
             signal=spec.signal.model_copy(deep=True),
@@ -52,7 +51,7 @@ class ChannelSpecSlice:
     transceiver: Transceiver
 
     @classmethod
-    def from_spec(cls, spec: "SimulationSpec") -> "ChannelSpecSlice":
+    def from_spec(cls, spec: SimulationSpec) -> ChannelSpecSlice:
         return cls(
             path=spec.path.model_copy(deep=True),
             spans=spec.spans.model_copy(deep=True),
@@ -71,7 +70,7 @@ class RxFrontEndSpecSlice:
     transceiver: Transceiver
 
     @classmethod
-    def from_spec(cls, spec: "SimulationSpec") -> "RxFrontEndSpecSlice":
+    def from_spec(cls, spec: SimulationSpec) -> RxFrontEndSpecSlice:
         return cls(
             signal=spec.signal.model_copy(deep=True),
             runtime=spec.runtime.model_copy(deep=True),
@@ -88,7 +87,7 @@ class DspSpecSlice:
     path: Path
 
     @classmethod
-    def from_spec(cls, spec: "SimulationSpec") -> "DspSpecSlice":
+    def from_spec(cls, spec: SimulationSpec) -> DspSpecSlice:
         return cls(
             processing=spec.processing.model_copy(deep=True),
             signal=spec.signal.model_copy(deep=True),
@@ -104,7 +103,7 @@ class FecSpecSlice:
     signal: Signal
 
     @classmethod
-    def from_spec(cls, spec: "SimulationSpec") -> "FecSpecSlice":
+    def from_spec(cls, spec: SimulationSpec) -> FecSpecSlice:
         return cls(
             processing=spec.processing.model_copy(deep=True),
             signal=spec.signal.model_copy(deep=True),
@@ -121,7 +120,7 @@ class MetricsSpecSlice:
     path: Path
 
     @classmethod
-    def from_spec(cls, spec: "SimulationSpec") -> "MetricsSpecSlice":
+    def from_spec(cls, spec: SimulationSpec) -> MetricsSpecSlice:
         return cls(
             signal=spec.signal.model_copy(deep=True),
             runtime=spec.runtime.model_copy(deep=True),
@@ -139,7 +138,7 @@ class ArtifactsSpecSlice:
     signal: Signal
 
     @classmethod
-    def from_spec(cls, spec: "SimulationSpec") -> "ArtifactsSpecSlice":
+    def from_spec(cls, spec: SimulationSpec) -> ArtifactsSpecSlice:
         return cls(
             outputs=spec.outputs.model_copy(deep=True),
             runtime=spec.runtime.model_copy(deep=True),
