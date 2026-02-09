@@ -154,3 +154,4 @@ Before opening/submitting any PR, ensure **all CI gates pass locally** (or via t
 - Keep external dependencies minimal beyond OptiCommPy and standard scientific Python.
 - Do not silently ignore invalid spec combinations; validate and return structured errors.
 - Never change the public spec/result shape without versioning + ADR + test updates.
+- When updating STATUS.md timestamps, use the system `date` (or `date -u`) command to record the current date; do not guess.

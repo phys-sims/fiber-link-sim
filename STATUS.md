@@ -3,7 +3,7 @@
 > **Source of truth:** Update this file whenever behavior, tests, or schemas change.
 
 ## Last updated
-- Date: 2026-02-12
+- Date: 2026-02-08
 - By: @openai-codex
 - Scope: Added scripts package marker to restore QPSK story regression import.
 
@@ -13,9 +13,9 @@
 
 | Check | Command | Status | Last run | Notes |
 | --- | --- | --- | --- | --- |
-| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-12 | Warning about deprecated default_stages. |
-| Type checking (mypy) | `python -m mypy src` | ✅ | 2026-02-12 |  |
-| Pytest fast | `python -m pytest -q -m "not slow" --durations=10` | ✅ | 2026-02-12 | OptiCommPy runtime warnings observed in story regression. |
+| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-08 | Warning about deprecated default_stages. |
+| Type checking (mypy) | `python -m mypy src` | ✅ | 2026-02-08 |  |
+| Pytest fast | `python -m pytest -q -m "not slow" --durations=10` | ✅ | 2026-02-08 | OptiCommPy runtime warnings observed in story regression. |
 | Pytest slow | `python -m pytest -q -m slow --durations=10` | ✅ | 2026-02-08 | OptiCommPy runtime warnings observed. |
 
 ---
