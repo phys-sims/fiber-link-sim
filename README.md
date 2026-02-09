@@ -43,6 +43,35 @@ example drawn from deterministic example symbol streams:
 ![PAM4 waveform](docs/assets/waveforms/pam4_waveform.svg)
 ![QPSK constellation](docs/assets/waveforms/qpsk_constellation.svg)
 
+## QPSK long-haul story (stage-by-stage)
+
+Generate a deterministic, stage-by-stage artifact story for coherent QPSK long-haul:
+
+```bash
+python scripts/generate_qpsk_story.py \
+  --spec src/fiber_link_sim/schema/examples/qpsk_longhaul_multispan.json
+```
+
+Artifacts are generated locally under `docs/assets/qpsk_story/<run_id>/` (and copied to
+`docs/assets/qpsk_story/latest/` by default). See the manifest JSON for file paths.
+
+To publish PNGs for a public branch or docs site, pass `--publish-dir` (PNG output is always used
+for publish):
+
+```bash
+python scripts/generate_qpsk_story.py \
+  --spec src/fiber_link_sim/schema/examples/qpsk_longhaul_multispan.json \
+  --publish-dir docs/assets/qpsk_story_public
+```
+
+## Validation & baselines
+
+Validation combines analytic baselines and regression coverage:
+
+* **Analytic**: QPSK BER closed-form check and propagation latency formula (`tests/analytic/`).
+* **Regression**: QPSK story manifest structure and artifact presence (`tests/regression/`).
+* **Integration**: end-to-end example specs remain validated under deterministic seeds.
+
 ## How this differs from OptiCommPy
 
 OptiCommPy provides the underlying physics and DSP building blocks. This repo focuses on the

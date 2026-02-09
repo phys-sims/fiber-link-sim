@@ -27,6 +27,7 @@ dev = [
   "mypy",
   "codespell",
   "pre-commit",
+  "matplotlib",
 ]
 
 [build-system]

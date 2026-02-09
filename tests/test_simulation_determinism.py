@@ -33,7 +33,7 @@ def test_simulation_determinism(filename: str) -> None:
     assert result_a.provenance is not None
     assert result_b.provenance is not None
     assert result_a.provenance.seed == result_b.provenance.seed
-    assert isclose(result_a.summary.latency_s.total, result_b.summary.latency_s.total)
+    assert isclose(result_a.summary.latency_s.total_s, result_b.summary.latency_s.total_s)
     assert isclose(
         result_a.summary.throughput_bps.net_after_fec, result_b.summary.throughput_bps.net_after_fec
     )

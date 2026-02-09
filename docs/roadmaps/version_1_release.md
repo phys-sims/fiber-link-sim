@@ -65,7 +65,7 @@ stable SimulationSpec → SimulationResult contract.
 - `src/fiber_link_sim/data_models/spec_models.py` (spec model updates; add minimal latency inputs if needed).
 - `src/fiber_link_sim/data_models/result_models.py` (add `LatencyBudget` model + metadata).
 - `src/fiber_link_sim/schema/simulation_spec.schema.v0.2.json` (add optional latency inputs).
-- `src/fiber_link_sim/schema/simulation_result.schema.v0.1.json` (structured latency budget output).
+- `src/fiber_link_sim/schema/simulation_result.schema.v0.2.json` (structured latency budget output).
 - `src/fiber_link_sim/stages/core.py` (compute latency budget from spec + pipeline state).
 - `src/fiber_link_sim/schema/README.md` (document fields & assumptions).
 - `docs/adr/` (ADR for latency budget definition and assumptions).
@@ -92,7 +92,8 @@ stable SimulationSpec → SimulationResult contract.
 **New files to add**
 - `scripts/generate_qpsk_story.py` (CLI entrypoint).
 - `docs/assets/qpsk_story/<run_id>/manifest.json` (generated).
-- `docs/assets/qpsk_story/<run_id>/*.png` (generated plots).
+- `docs/assets/qpsk_story/<run_id>/*.svg` (generated plots, local).
+- `docs/assets/qpsk_story_public/<run_id>/*.png` (optional publish-ready plots).
 
 **Test strategy**
 - **Fast integration test:** run the script on reduced symbols (e.g., `n_symbols=2k`) and assert manifest structure

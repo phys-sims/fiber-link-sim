@@ -11,7 +11,7 @@ If agents touch anything, **they should not change the meaning of fields silentl
 Authoritative copies ship with the package:
 
 - `src/fiber_link_sim/schema/simulation_spec.schema.v0.2.json`
-- `src/fiber_link_sim/schema/simulation_result.schema.v0.1.json`
+- `src/fiber_link_sim/schema/simulation_result.schema.v0.2.json`
 
 A human-facing mirror can exist at repo root (`schema/`) but should be generated from the authoritative copy, not hand-edited.
 
@@ -96,7 +96,7 @@ How fiber propagation is simulated.
 
 ### `latency_model`
 Controls how latency is broken down in the Metrics stage.
-- `serialization_weight`: multiplier on serialization delay derived from total bits and symbol rate.
+- `serialization_weight`: multiplier on serialization delay derived from payload bits and symbol rate.
 - `processing_weight`: multiplier applied to `runtime.n_symbols / signal.symbol_rate_baud` to estimate processing time.
 - `processing_floor_s`: minimum processing latency applied even for tiny runs.
 
@@ -116,7 +116,9 @@ Controls artifact emission.
 ## SimulationResult fields (what MCP/UI should expect)
 
 - `status`: success or error (mutually exclusive summary/error)
-- `summary`: metrics + latency + throughput numbers (small JSON)
+- `summary`: metrics + latency budget + throughput numbers (small JSON)
+- `summary.latency_s`: structured `LatencyBudget` with `*_s` fields
+- `summary.latency_metadata`: assumptions, inputs, defaults, and schema version for the latency budget
 - `error`: structured error info for failed runs
 - `provenance`: versions/hashes/seed/runtime/backend/model
 - `warnings`: non-fatal issues (e.g., equalizer non-convergence)

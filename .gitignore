@@ -13,6 +13,7 @@ __pycache__/
 coverage.xml
 htmlcov/
 artifacts/
+docs/assets/qpsk_story/
 
 # --- Packaging/build ---
 dist/
