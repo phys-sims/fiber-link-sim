@@ -1,0 +1,5 @@
+{
+  "bits_per_symbol": 4,
+  "payload_bits": 15000,
+  "symbol_rate_baud": 32000000000.0
+}

@@ -1,0 +1,16 @@
+{
+  "latency_s": {
+    "dsp_group_delay_s": 1.5234375e-10,
+    "fec_block_s": 1.46484375e-07,
+    "processing_s": 1e-06,
+    "propagation_s": 0.0019589552182797073,
+    "queueing_s": 0.0,
+    "serialization_s": 1.171875e-07,
+    "total_s": 0.0019602190424984575
+  },
+  "throughput_bps": {
+    "goodput_est": 46875000000.0,
+    "net_after_fec": 102400000000.0,
+    "raw_line_rate": 128000000000.0
+  }
+}

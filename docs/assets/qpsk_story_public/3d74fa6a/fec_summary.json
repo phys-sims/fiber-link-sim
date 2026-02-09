@@ -1,0 +1,7 @@
+{
+  "code_rate": 0.8,
+  "enabled": true,
+  "post_fec_ber": 0.158655,
+  "pre_fec_ber": 0.158655,
+  "scheme": "ldpc"
+}

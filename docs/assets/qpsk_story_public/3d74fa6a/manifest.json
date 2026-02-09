@@ -1,0 +1,302 @@
+{
+  "artifacts": [
+    {
+      "kind": "png",
+      "name": "tx_psd",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\tx_psd.png",
+      "stage": "tx"
+    },
+    {
+      "kind": "png",
+      "name": "tx_constellation",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\tx_constellation.png",
+      "stage": "tx"
+    },
+    {
+      "kind": "json",
+      "name": "tx_summary",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\tx_summary.json",
+      "stage": "tx"
+    },
+    {
+      "kind": "png",
+      "name": "channel_psd",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\channel_psd.png",
+      "stage": "channel"
+    },
+    {
+      "kind": "png",
+      "name": "channel_osnr",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\channel_osnr.png",
+      "stage": "channel"
+    },
+    {
+      "kind": "json",
+      "name": "channel_summary",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\channel_summary.json",
+      "stage": "channel"
+    },
+    {
+      "kind": "png",
+      "name": "rx_eye",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\rx_eye.png",
+      "stage": "rx_frontend"
+    },
+    {
+      "kind": "png",
+      "name": "rx_time_trace",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\rx_time_trace.png",
+      "stage": "rx_frontend"
+    },
+    {
+      "kind": "png",
+      "name": "rx_histogram",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\rx_histogram.png",
+      "stage": "rx_frontend"
+    },
+    {
+      "kind": "json",
+      "name": "rx_summary",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\rx_summary.json",
+      "stage": "rx_frontend"
+    },
+    {
+      "kind": "png",
+      "name": "dsp_constellation",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\dsp_constellation.png",
+      "stage": "dsp"
+    },
+    {
+      "kind": "png",
+      "name": "dsp_phase_error",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\dsp_phase_error.png",
+      "stage": "dsp"
+    },
+    {
+      "kind": "json",
+      "name": "dsp_summary",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\dsp_summary.json",
+      "stage": "dsp"
+    },
+    {
+      "kind": "png",
+      "name": "fec_ber",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\fec_ber.png",
+      "stage": "fec"
+    },
+    {
+      "kind": "json",
+      "name": "fec_summary",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\fec_summary.json",
+      "stage": "fec"
+    },
+    {
+      "kind": "png",
+      "name": "latency_budget",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\latency_budget.png",
+      "stage": "metrics"
+    },
+    {
+      "kind": "png",
+      "name": "throughput_summary",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\throughput_summary.png",
+      "stage": "metrics"
+    },
+    {
+      "kind": "json",
+      "name": "metrics_summary",
+      "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\metrics_summary.json",
+      "stage": "metrics"
+    }
+  ],
+  "run_id": "3d74fa6a",
+  "seed": 2113,
+  "sim_version": "0.1.0",
+  "spec_hash": "3d74fa6a5939b304bb49ce5cca1e70e7208d8dbe09a556d61e160fbc8150c7a9",
+  "stages": {
+    "channel": [
+      {
+        "kind": "png",
+        "name": "channel_psd",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\channel_psd.png",
+        "stage": "channel"
+      },
+      {
+        "kind": "png",
+        "name": "channel_osnr",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\channel_osnr.png",
+        "stage": "channel"
+      },
+      {
+        "kind": "json",
+        "name": "channel_summary",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\channel_summary.json",
+        "stage": "channel"
+      }
+    ],
+    "dsp": [
+      {
+        "kind": "png",
+        "name": "dsp_constellation",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\dsp_constellation.png",
+        "stage": "dsp"
+      },
+      {
+        "kind": "png",
+        "name": "dsp_phase_error",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\dsp_phase_error.png",
+        "stage": "dsp"
+      },
+      {
+        "kind": "json",
+        "name": "dsp_summary",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\dsp_summary.json",
+        "stage": "dsp"
+      }
+    ],
+    "fec": [
+      {
+        "kind": "png",
+        "name": "fec_ber",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\fec_ber.png",
+        "stage": "fec"
+      },
+      {
+        "kind": "json",
+        "name": "fec_summary",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\fec_summary.json",
+        "stage": "fec"
+      }
+    ],
+    "metrics": [
+      {
+        "kind": "png",
+        "name": "latency_budget",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\latency_budget.png",
+        "stage": "metrics"
+      },
+      {
+        "kind": "png",
+        "name": "throughput_summary",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\throughput_summary.png",
+        "stage": "metrics"
+      },
+      {
+        "kind": "json",
+        "name": "metrics_summary",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\metrics_summary.json",
+        "stage": "metrics"
+      }
+    ],
+    "rx_frontend": [
+      {
+        "kind": "png",
+        "name": "rx_eye",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\rx_eye.png",
+        "stage": "rx_frontend"
+      },
+      {
+        "kind": "png",
+        "name": "rx_time_trace",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\rx_time_trace.png",
+        "stage": "rx_frontend"
+      },
+      {
+        "kind": "png",
+        "name": "rx_histogram",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\rx_histogram.png",
+        "stage": "rx_frontend"
+      },
+      {
+        "kind": "json",
+        "name": "rx_summary",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\rx_summary.json",
+        "stage": "rx_frontend"
+      }
+    ],
+    "tx": [
+      {
+        "kind": "png",
+        "name": "tx_psd",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\tx_psd.png",
+        "stage": "tx"
+      },
+      {
+        "kind": "png",
+        "name": "tx_constellation",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\tx_constellation.png",
+        "stage": "tx"
+      },
+      {
+        "kind": "json",
+        "name": "tx_summary",
+        "path": "docs\\assets\\qpsk_story_public\\3d74fa6a\\tx_summary.json",
+        "stage": "tx"
+      }
+    ]
+  },
+  "summary": {
+    "errors": {
+      "fer": 1.0,
+      "post_fec_ber": 0.158655,
+      "pre_fec_ber": 0.158655
+    },
+    "evm_rms": 1.0,
+    "latency_metadata": {
+      "assumptions": [
+        "Serialization latency uses payload_bits only; framing overhead ignored.",
+        "DSP group delay assumes linear-phase FIR (taps/2).",
+        "CD compensation group delay treated as 0 (no FIR tap count).",
+        "Queueing latency set to 0.0 (no buffering model)."
+      ],
+      "defaults_used": {
+        "dsp.mimo_eq.taps": 15,
+        "dsp.resample.out_fs_hz": 128000000000.0,
+        "fec.block_size_bits": 15000,
+        "queueing_s": 0.0
+      },
+      "inputs_used": {
+        "bits_per_symbol": 4,
+        "dsp.matched_filter.n_taps": 25,
+        "dsp.mimo_eq.taps": 15,
+        "dsp_chain": [
+          "resample",
+          "matched_filter",
+          "cd_comp",
+          "mimo_eq",
+          "cpr",
+          "demap"
+        ],
+        "fec.block_size_bits": 15000,
+        "fec.code_rate": 0.8,
+        "fec.net_bit_rate": 102400000000.0,
+        "fiber_n_group": 1.4682,
+        "path_length_m": 400000.0,
+        "payload_bits": 15000,
+        "processing_floor_s": 1e-06,
+        "processing_weight": 0.1,
+        "runtime_n_symbols": 8192,
+        "symbol_rate_baud": 32000000000.0
+      },
+      "schema_version": "v0.2"
+    },
+    "latency_s": {
+      "dsp_group_delay_s": 1.5234375e-10,
+      "fec_block_s": 1.46484375e-07,
+      "processing_s": 1e-06,
+      "propagation_s": 0.0019589552182797073,
+      "queueing_s": 0.0,
+      "serialization_s": 1.171875e-07,
+      "total_s": 0.0019602190424984575
+    },
+    "osnr_db": 15.179932902868874,
+    "q_factor_db": 0.0,
+    "snr_db": 0.0,
+    "throughput_bps": {
+      "goodput_est": 46875000000.0,
+      "net_after_fec": 102400000000.0,
+      "raw_line_rate": 128000000000.0
+    }
+  },
+  "version": "v1"
+}
