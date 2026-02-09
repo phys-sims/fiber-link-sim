@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -8,9 +10,10 @@ import pytest
 from fiber_link_sim.artifacts import artifact_root_for_spec
 from fiber_link_sim.data_models.spec_models import SimulationSpec
 from fiber_link_sim.simulate import simulate
-from scripts.generate_qpsk_story import generate_story_assets
 
-EXAMPLE_DIR = Path(__file__).resolve().parents[2] / "src/fiber_link_sim/schema/examples"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+EXAMPLE_DIR = REPO_ROOT / "src/fiber_link_sim/schema/examples"
 
 
 @pytest.mark.integration
@@ -43,6 +46,11 @@ def test_qpsk_story_manifest_structure(monkeypatch: pytest.MonkeyPatch, tmp_path
     spec_model = SimulationSpec.model_validate(spec_payload)
     output_root = tmp_path / "story"
     output_root.mkdir(parents=True, exist_ok=True)
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    generate_story_assets = importlib.import_module(
+        "scripts.generate_qpsk_story"
+    ).generate_story_assets
     manifest = generate_story_assets(
         spec_model=spec_model,
         result=result.model_dump(),
