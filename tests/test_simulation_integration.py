@@ -30,7 +30,7 @@ def test_simulation_examples_success() -> None:
         result = simulate(_load_example(filename))
         assert result.status == "success"
         assert result.summary is not None
-        assert isfinite(result.summary.latency_s.total)
+        assert isfinite(result.summary.latency_s.total_s)
         assert 0.0 <= result.summary.errors.pre_fec_ber <= 1.0
         assert 0.0 <= result.summary.errors.post_fec_ber <= 1.0
         assert 0.0 <= result.summary.errors.fer <= 1.0

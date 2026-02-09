@@ -148,6 +148,8 @@ def artifact_root_for_spec(spec_hash: str, base_dir: Path | None = None) -> Path
 
 def compute_psd(signal: np.ndarray, fs_hz: float) -> tuple[np.ndarray, np.ndarray]:
     signal = np.asarray(signal)
+    if signal.ndim > 1:
+        signal = signal[:, 0]
     if signal.size == 0:
         return np.array([]), np.array([])
     spectrum = np.fft.fftshift(np.fft.fft(signal))
@@ -161,6 +163,8 @@ def build_eye_traces(
     samples: np.ndarray, sps: int, *, span_symbols: int = 2, max_traces: int = 128
 ) -> np.ndarray:
     samples = np.asarray(samples)
+    if samples.ndim > 1:
+        samples = samples[:, 0]
     if samples.size == 0:
         return np.array([])
     segment_len = int(span_symbols * sps)

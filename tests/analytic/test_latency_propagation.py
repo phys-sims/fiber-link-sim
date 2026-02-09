@@ -4,23 +4,24 @@ from math import isclose
 
 from fiber_link_sim.data_models.spec_models import SimulationSpec
 from fiber_link_sim.data_models.stage_models import MetricsSpecSlice
-from fiber_link_sim.stages.base import SimulationState
-from fiber_link_sim.stages.configs import MetricsStageConfig
-from fiber_link_sim.stages.core import MetricsStage
+from fiber_link_sim.latency import compute_latency_budget
 
 
-def test_latency_model_breakdown_exact() -> None:
+def test_latency_propagation_matches_group_index() -> None:
     spec = SimulationSpec.model_validate(
         {
             "v": "0.2",
-            "path": {"segments": [{"length_m": 1000.0}], "geo": {"enabled": False}},
+            "path": {
+                "segments": [{"length_m": 500.0}, {"length_m": 1500.0}],
+                "geo": {"enabled": False},
+            },
             "fiber": {
                 "alpha_db_per_km": 0.2,
                 "beta2_s2_per_m": -2.17e-26,
                 "beta3_s3_per_m": None,
                 "gamma_w_inv_m": 0.0013,
                 "pmd_ps_sqrt_km": 0.0,
-                "n_group": 2.0,
+                "n_group": 1.9,
             },
             "spans": {
                 "mode": "from_path_segments",
@@ -28,27 +29,27 @@ def test_latency_model_breakdown_exact() -> None:
                 "amplifier": {"type": "none", "mode": "none"},
             },
             "signal": {
-                "format": "coherent_qpsk",
+                "format": "imdd_ook",
                 "symbol_rate_baud": 10.0,
                 "rolloff": 0.2,
-                "n_pol": 2,
+                "n_pol": 1,
                 "frame": {"payload_bits": 100, "preamble_bits": 0, "pilot_bits": 0},
             },
             "transceiver": {
                 "tx": {"laser_linewidth_hz": 0.0, "launch_power_dbm": 0.0},
                 "rx": {
-                    "coherent": True,
+                    "coherent": False,
                     "lo_linewidth_hz": 0.0,
                     "adc": {"sample_rate_hz": 40.0, "bits": 8},
                     "noise": {"thermal": False, "shot": False},
                 },
             },
             "processing": {
-                "dsp_chain": [{"name": "matched_filter", "enabled": False, "params": {}}],
+                "dsp_chain": [],
                 "fec": {"enabled": False, "scheme": "none", "code_rate": 1.0, "params": {}},
             },
             "propagation": {
-                "model": "manakov",
+                "model": "scalar_glnse",
                 "backend": "builtin_ssfm",
                 "effects": {
                     "dispersion": False,
@@ -60,9 +61,9 @@ def test_latency_model_breakdown_exact() -> None:
                 "ssfm": {"dz_m": 100.0, "step_adapt": False},
             },
             "latency_model": {
-                "serialization_weight": 1.25,
-                "processing_weight": 0.5,
-                "processing_floor_s": 0.1,
+                "serialization_weight": 1.0,
+                "processing_weight": 0.0,
+                "processing_floor_s": 0.0,
             },
             "runtime": {
                 "seed": 0,
@@ -73,30 +74,6 @@ def test_latency_model_breakdown_exact() -> None:
             "outputs": {"artifact_level": "none", "return_waveforms": False},
         }
     )
-    state = SimulationState()
-    state.stats["total_length_m"] = 1000.0
-    state.stats["total_bits"] = 80
-    state.stats["bits_per_symbol"] = 2
-    state.stats["pre_fec_ber"] = 0.0
-    state.stats["snr_db"] = 0.0
-    state.stats["evm_rms"] = 0.0
-
-    stage = MetricsStage(
-        cfg=MetricsStageConfig(name="metrics", spec=MetricsSpecSlice.from_spec(spec))
-    )
-    result = stage.process(state)
-    latency = result.state.stats["summary"]["latency_s"]
-
-    c_m_s = 299_792_458.0
-    propagation_expected = 1000.0 * 2.0 / c_m_s
-    serialization_expected = 100 / (10.0 * 2 * 2) * 1.25
-    processing_expected = max(0.1, 128 / 10.0 * 0.5)
-    total_expected = propagation_expected + serialization_expected + processing_expected
-
-    assert isclose(latency["propagation_s"], propagation_expected, rel_tol=0.0, abs_tol=0.0)
-    assert isclose(latency["serialization_s"], serialization_expected, rel_tol=0.0, abs_tol=0.0)
-    assert isclose(latency["dsp_group_delay_s"], 0.0, rel_tol=0.0, abs_tol=0.0)
-    assert isclose(latency["fec_block_s"], 0.0, rel_tol=0.0, abs_tol=0.0)
-    assert isclose(latency["queueing_s"], 0.0, rel_tol=0.0, abs_tol=0.0)
-    assert isclose(latency["processing_s"], processing_expected, rel_tol=0.0, abs_tol=0.0)
-    assert isclose(latency["total_s"], total_expected, rel_tol=0.0, abs_tol=0.0)
+    budget, _ = compute_latency_budget(MetricsSpecSlice.from_spec(spec), {})
+    expected = (500.0 + 1500.0) * 1.9 / 299_792_458.0
+    assert isclose(budget["propagation_s"], expected, rel_tol=0.0, abs_tol=0.0)

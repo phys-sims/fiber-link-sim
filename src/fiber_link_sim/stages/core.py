@@ -13,6 +13,7 @@ from fiber_link_sim.artifacts import (
     compute_phase_error,
     compute_psd,
 )
+from fiber_link_sim.latency import compute_latency_budget
 from fiber_link_sim.stages.base import SimulationState, Stage, StageResult
 from fiber_link_sim.stages.configs import (
     ArtifactsStageConfig,
@@ -195,23 +196,10 @@ class MetricsStage(Stage):
                 }
             )
 
-        total_length_m = float(state.stats.get("total_length_m", 0.0))
         bits_per_symbol_val = int(state.stats.get("bits_per_symbol", 1))
         total_bits = int(state.stats.get("total_bits", 0))
-        latency_model = spec.latency_model
 
-        c_m_s = 299_792_458.0
-        propagation_s = total_length_m / (c_m_s / spec.fiber.n_group)
-        serialization_s = (
-            total_bits
-            / (spec.signal.symbol_rate_baud * bits_per_symbol_val)
-            * latency_model.serialization_weight
-        )
-        processing_est_s = max(
-            latency_model.processing_floor_s,
-            spec.runtime.n_symbols / spec.signal.symbol_rate_baud * latency_model.processing_weight,
-        )
-        total_latency_s = propagation_s + serialization_s + processing_est_s
+        latency_budget, latency_metadata = compute_latency_budget(spec, state.stats)
 
         raw_line_rate = spec.signal.symbol_rate_baud * bits_per_symbol_val
         if spec.processing.fec.enabled:
@@ -222,12 +210,8 @@ class MetricsStage(Stage):
 
         osnr_db = state.stats.get("osnr_db")
         summary = {
-            "latency_s": {
-                "propagation": propagation_s,
-                "serialization": serialization_s,
-                "processing_est": processing_est_s,
-                "total": total_latency_s,
-            },
+            "latency_s": latency_budget,
+            "latency_metadata": latency_metadata,
             "throughput_bps": {
                 "raw_line_rate": raw_line_rate,
                 "net_after_fec": net_after_fec,
@@ -343,6 +327,17 @@ class ArtifactsStage(Stage):
                         ArtifactPayload(name="dsp_phase_error", arrays={"radians": phase_error})
                     )
                 )
+
+        if spec.outputs.artifact_level == "debug":
+            tx_symbols = state.load_signal("tx", "symbols")
+            if tx_symbols is not None:
+                symbols = np.asarray(tx_symbols).reshape(-1)
+                if symbols.size:
+                    state.artifacts.append(
+                        state.artifact_store.save_npz_artifact(
+                            ArtifactPayload(name="tx_constellation", arrays={"symbols": symbols})
+                        )
+                    )
 
         state.meta.setdefault("stage_timings", {})[self.name] = time.perf_counter() - start
         return StageResult(state=state)

@@ -13,3 +13,4 @@
 | [ADR-0009](docs/adr/0009-latency-model.md) | 0009-latency-model.md |  |  |  |  |
 | [ADR-0010](docs/adr/0010-ldpc-fec-fallback.md) | 0010-ldpc-fec-fallback.md |  |  |  |  |
 | [ADR-0011](docs/adr/0011-state-refs-artifact-store.md) | 0011-state-refs-artifact-store.md |  |  |  |  |
+| [ADR-0012](docs/adr/0012-latency-budget-model.md) | 0012-latency-budget-model.md |  |  |  |  |

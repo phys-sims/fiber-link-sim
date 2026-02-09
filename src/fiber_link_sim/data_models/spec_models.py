@@ -306,12 +306,23 @@ def get_simulation_spec_schema() -> dict[str, Any]:
 ResultStatus = Literal["success", "error"]
 
 
-class Latency(BaseModel):
+class LatencyBudget(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    propagation: float = Field(..., ge=0)
-    serialization: float = Field(..., ge=0)
-    processing_est: float = Field(..., ge=0)
-    total: float = Field(..., ge=0)
+    propagation_s: float = Field(..., ge=0)
+    serialization_s: float = Field(..., ge=0)
+    dsp_group_delay_s: float = Field(..., ge=0)
+    fec_block_s: float = Field(..., ge=0)
+    queueing_s: float = Field(..., ge=0)
+    processing_s: float = Field(..., ge=0)
+    total_s: float = Field(..., ge=0)
+
+
+class LatencyMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    assumptions: list[str] = Field(default_factory=list)
+    inputs_used: dict[str, Any] = Field(default_factory=dict)
+    defaults_used: dict[str, Any] = Field(default_factory=dict)
+    schema_version: str
 
 
 class Throughput(BaseModel):
@@ -330,7 +341,8 @@ class Errors(BaseModel):
 
 class Summary(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    latency_s: Latency
+    latency_s: LatencyBudget
+    latency_metadata: LatencyMetadata
     throughput_bps: Throughput
     errors: Errors
     osnr_db: float | None = None

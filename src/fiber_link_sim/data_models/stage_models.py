@@ -118,6 +118,7 @@ class MetricsSpecSlice:
     processing: Processing
     fiber: Fiber
     path: Path
+    transceiver: Transceiver
 
     @classmethod
     def from_spec(cls, spec: SimulationSpec) -> MetricsSpecSlice:
@@ -128,6 +129,7 @@ class MetricsSpecSlice:
             processing=spec.processing.model_copy(deep=True),
             fiber=spec.fiber.model_copy(deep=True),
             path=spec.path.model_copy(deep=True),
+            transceiver=spec.transceiver.model_copy(deep=True),
         )
 
 

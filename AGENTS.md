@@ -16,7 +16,7 @@ This repository is the **physics-core** for a fiber-optic communication link sim
 - `docs/phys_pipeline_usage.md` — phys-pipeline integration patterns (metrics vs artifacts, State, determinism).
 - `src/fiber_physics/schema/README.md` — meaning of all spec flags + rationale + boundaries.
 - `src/fiber_physics/schema/simulation_spec.schema.v0.1.json` — input contract.
-- `src/fiber_physics/schema/simulation_result.schema.v0.1.json` — output contract.
+- `src/fiber_physics/schema/simulation_result.schema.v0.2.json` — output contract.
 - `src/fiber_physics/schema/examples/*.json` — canonical example specs.
 
 ## End-goal acceptance criteria
