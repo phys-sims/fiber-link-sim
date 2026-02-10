@@ -55,15 +55,6 @@ python scripts/generate_qpsk_story.py \
 Artifacts are generated locally under `docs/assets/qpsk_story/<run_id>/` (and copied to
 `docs/assets/qpsk_story/latest/` by default). See the manifest JSON for file paths.
 
-To publish PNGs for a public branch or docs site, pass `--publish-dir` (PNG output is always used
-for publish):
-
-```bash
-python scripts/generate_qpsk_story.py \
-  --spec src/fiber_link_sim/schema/examples/qpsk_longhaul_multispan.json \
-  --publish-dir docs/assets/qpsk_story_public
-```
-
 ## Validation & baselines
 
 Validation combines analytic baselines and regression coverage:
