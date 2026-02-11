@@ -118,6 +118,7 @@ class MetricsSpecSlice:
     processing: Processing
     fiber: Fiber
     path: Path
+    propagation: Propagation
     transceiver: Transceiver
 
     @classmethod
@@ -129,6 +130,7 @@ class MetricsSpecSlice:
             processing=spec.processing.model_copy(deep=True),
             fiber=spec.fiber.model_copy(deep=True),
             path=spec.path.model_copy(deep=True),
+            propagation=spec.propagation.model_copy(deep=True),
             transceiver=spec.transceiver.model_copy(deep=True),
         )
 

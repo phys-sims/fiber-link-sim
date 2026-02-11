@@ -14,3 +14,4 @@
 | [ADR-0010](docs/adr/0010-ldpc-fec-fallback.md) | 0010-ldpc-fec-fallback.md |  |  |  |  |
 | [ADR-0011](docs/adr/0011-state-refs-artifact-store.md) | 0011-state-refs-artifact-store.md |  |  |  |  |
 | [ADR-0012](docs/adr/0012-latency-budget-model.md) | 0012-latency-budget-model.md |  |  |  |  |
+| [ADR-0013](docs/adr/0013-temperature-aware-latency-and-spread.md) | 0013-temperature-aware-latency-and-spread.md |  |  |  |  |

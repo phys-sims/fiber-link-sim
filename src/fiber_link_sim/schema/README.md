@@ -35,7 +35,7 @@ It must not change physics.
 ### `path`
 A link is a sequence of segments:
 - `segments[i].length_m` contributes to propagation delay and span loss.
-- `segments[i].temp_c` is available for future environment modeling (only applied if `propagation.effects.env_effects = true`).
+- `segments[i].temp_c` is applied to propagation latency when `propagation.effects.env_effects = true` using a deterministic temperature-aware group-delay model.
 - `geo.enabled` and `geo.polyline_wgs84` exist for the routing product; physics can ignore them in v0.2.
 
 ### `fiber`
@@ -90,8 +90,8 @@ How fiber propagation is simulated.
 - `model`: scalar_glnse or manakov
 - `backend`: backend identifier (v0.2 supports builtin_ssfm only)
 - `effects`: toggles (dispersion, nonlinearity, ase, pmd, env_effects)
-  - **Implementation:** dispersion → OptiCommPy `D`, nonlinearity → `gamma`, ASE → EDFA vs ideal amp; PMD/env toggles
-    are wired into adapter parameters for future modeling.
+  - **Implementation:** dispersion → OptiCommPy `D`, nonlinearity → `gamma`, ASE → EDFA vs ideal amp; PMD wired into adapter parameters.
+  - `env_effects=true` enables a temperature-adjusted propagation latency calculation based on `path.segments[].temp_c`.
 - `ssfm`: numerical step size controls (dz_m, step_adapt)
 
 ### `latency_model`
@@ -118,7 +118,7 @@ Controls artifact emission.
 - `status`: success or error (mutually exclusive summary/error)
 - `summary`: metrics + latency budget + throughput numbers (small JSON)
 - `summary.latency_s`: structured `LatencyBudget` with `*_s` fields
-- `summary.latency_metadata`: assumptions, inputs, defaults, and schema version for the latency budget
+- `summary.latency_metadata`: assumptions, inputs, defaults, and schema version for the latency budget (includes deterministic propagation spread percentiles when env effects are enabled)
 - `error`: structured error info for failed runs
 - `provenance`: versions/hashes/seed/runtime/backend/model
 - `warnings`: non-fatal issues (e.g., equalizer non-convergence)

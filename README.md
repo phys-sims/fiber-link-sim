@@ -33,6 +33,7 @@ Key references for deeper details live in:
 * `src/fiber_link_sim/schema/README.md`
 * `docs/stages_and_flags.md`
 * `docs/waveform_examples.md`
+* `docs/hft_latency_demo.md`
 
 ## Waveform examples
 
@@ -90,6 +91,15 @@ See `src/fiber_link_sim/schema/examples/` for canonical spec examples.
 
 ```bash
 pip install -e .
+```
+
+
+## Benchmark simulation speed
+
+Use the benchmark helper to get quick runtime statistics for optimization planning:
+
+```bash
+python scripts/benchmark_simulate.py --repeat 3
 ```
 
 ## Testing

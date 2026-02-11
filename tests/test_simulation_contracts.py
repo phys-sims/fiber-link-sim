@@ -31,6 +31,9 @@ def test_example_specs_validate() -> None:
         "qpsk_longhaul_multispan.json",
         "ook_smoke.json",
         "pam4_shorthaul.json",
+        "hft_chicago_new_jersey.json",
+        "hft_london_frankfurt.json",
+        "hft_new_york_london.json",
     ):
         spec_data = _load_example(filename)
         spec = SimulationSpec.model_validate(spec_data)

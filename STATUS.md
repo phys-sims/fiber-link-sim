@@ -3,9 +3,9 @@
 > **Source of truth:** Update this file whenever behavior, tests, or schemas change.
 
 ## Last updated
-- Date: 2026-02-09
+- Date: 2026-02-10
 - By: @openai-codex
-- Scope: Added test import shim to ensure scripts module resolves in CI.
+- Scope: Added HFT latency demo assets (temperature-aware latency + spread tests, CLI demo docs, and benchmark script).
 
 ---
 
