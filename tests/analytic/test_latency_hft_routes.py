@@ -22,7 +22,12 @@ def _base_spec(length_m: float) -> dict:
         "spans": {
             "mode": "fixed_span_length",
             "span_length_m": 80_000.0,
-            "amplifier": {"type": "edfa", "mode": "auto_gain", "noise_figure_db": 5.0, "max_gain_db": 20.0},
+            "amplifier": {
+                "type": "edfa",
+                "mode": "auto_gain",
+                "noise_figure_db": 5.0,
+                "max_gain_db": 20.0,
+            },
         },
         "signal": {
             "format": "imdd_ook",

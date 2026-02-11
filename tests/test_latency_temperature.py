@@ -65,7 +65,12 @@ def _temperature_spec(temp_c: float, *, env_effects: bool = True, seed: int = 11
                 "processing_weight": 0.0,
                 "processing_floor_s": 0.0,
             },
-            "runtime": {"seed": seed, "n_symbols": 1024, "samples_per_symbol": 2, "max_runtime_s": 10.0},
+            "runtime": {
+                "seed": seed,
+                "n_symbols": 1024,
+                "samples_per_symbol": 2,
+                "max_runtime_s": 10.0,
+            },
             "outputs": {"artifact_level": "none", "return_waveforms": False},
         }
     )
@@ -103,4 +108,6 @@ def test_temperature_ignored_when_env_effects_disabled() -> None:
     cool_budget, _ = compute_latency_budget(MetricsSpecSlice.from_spec(cool), {})
     hot_budget, _ = compute_latency_budget(MetricsSpecSlice.from_spec(hot), {})
 
-    assert isclose(cool_budget["propagation_s"], hot_budget["propagation_s"], rel_tol=0.0, abs_tol=0.0)
+    assert isclose(
+        cool_budget["propagation_s"], hot_budget["propagation_s"], rel_tol=0.0, abs_tol=0.0
+    )
