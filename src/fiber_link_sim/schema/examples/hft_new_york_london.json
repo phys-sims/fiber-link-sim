@@ -1,0 +1,117 @@
+{
+  "v": "0.2",
+  "scenario": {
+    "name": "HFT New York to London latency demo",
+    "tags": [
+      "hft",
+      "latency",
+      "demo",
+      "transatlantic"
+    ]
+  },
+  "path": {
+    "segments": [
+      {
+        "length_m": 500000,
+        "temp_c": 15.0
+      },
+      {
+        "length_m": 5500000,
+        "temp_c": 8.0,
+        "notes": "Subsea cable"
+      },
+      {
+        "length_m": 500000,
+        "temp_c": 18.0
+      }
+    ],
+    "geo": {
+      "enabled": false,
+      "polyline_wgs84": []
+    }
+  },
+  "fiber": {
+    "alpha_db_per_km": 0.2,
+    "beta2_s2_per_m": -2.17e-26,
+    "beta3_s3_per_m": 0.0,
+    "gamma_w_inv_m": 0.0,
+    "pmd_ps_sqrt_km": 0.0,
+    "n_group": 1.4682
+  },
+  "spans": {
+    "mode": "from_path_segments",
+    "span_length_m": 1000,
+    "amplifier": {
+      "type": "none",
+      "mode": "none"
+    }
+  },
+  "signal": {
+    "format": "imdd_ook",
+    "symbol_rate_baud": 25000000000,
+    "rolloff": 0.2,
+    "n_pol": 1,
+    "frame": {
+      "payload_bits": 4096,
+      "preamble_bits": 64,
+      "pilot_bits": 0
+    }
+  },
+  "transceiver": {
+    "tx": {
+      "laser_linewidth_hz": 0,
+      "launch_power_dbm": 0.0
+    },
+    "rx": {
+      "coherent": false,
+      "lo_linewidth_hz": 0,
+      "adc": {
+        "sample_rate_hz": 100000000000,
+        "bits": 8
+      },
+      "noise": {
+        "thermal": true,
+        "shot": true
+      }
+    }
+  },
+  "processing": {
+    "dsp_chain": [],
+    "fec": {
+      "enabled": false,
+      "scheme": "none",
+      "code_rate": 1.0,
+      "params": {}
+    }
+  },
+  "propagation": {
+    "model": "scalar_glnse",
+    "backend": "builtin_ssfm",
+    "effects": {
+      "dispersion": false,
+      "nonlinearity": false,
+      "ase": false,
+      "pmd": false,
+      "env_effects": true
+    },
+    "ssfm": {
+      "dz_m": 1000,
+      "step_adapt": false
+    }
+  },
+  "latency_model": {
+    "serialization_weight": 1.0,
+    "processing_weight": 0.02,
+    "processing_floor_s": 1e-06
+  },
+  "runtime": {
+    "seed": 23,
+    "n_symbols": 512,
+    "samples_per_symbol": 2,
+    "max_runtime_s": 120
+  },
+  "outputs": {
+    "artifact_level": "none",
+    "return_waveforms": false
+  }
+}

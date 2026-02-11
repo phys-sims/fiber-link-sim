@@ -2,12 +2,18 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
+
 from fiber_link_sim.adapters.opticommpy.dsp import resolve_dsp_chain
 from fiber_link_sim.data_models.spec_models import Signal
 from fiber_link_sim.data_models.stage_models import DspSpecSlice, MetricsSpecSlice
 from fiber_link_sim.utils import bits_per_symbol, total_link_length_m
 
 _C_M_S = 299_792_458.0
+_TEMP_REF_C = 20.0
+_GROUP_DELAY_TEMP_COEFF_PER_C = 7e-6
+_TEMP_SPREAD_SIGMA_C = 1.0
+_TEMP_SPREAD_SAMPLES = 512
 
 
 def compute_latency_budget(
@@ -20,7 +26,16 @@ def compute_latency_budget(
     total_length_m = float(stats.get("total_length_m") or total_link_length_m(spec.path))
     inputs_used["path_length_m"] = total_length_m
     inputs_used["fiber_n_group"] = spec.fiber.n_group
-    propagation_s = total_length_m * spec.fiber.n_group / _C_M_S
+    propagation_s, propagation_inputs, propagation_defaults, propagation_assumptions = (
+        _propagation_latency(spec)
+    )
+    inputs_used.update(propagation_inputs)
+    defaults_used.update(propagation_defaults)
+    assumptions.extend(propagation_assumptions)
+
+    spread = _propagation_spread_estimate(spec)
+    if spread is not None:
+        inputs_used["propagation_spread_s"] = spread
 
     payload_bits = int(spec.signal.frame.payload_bits)
     inputs_used["payload_bits"] = payload_bits
@@ -85,6 +100,76 @@ def compute_latency_budget(
         "schema_version": "v0.2",
     }
     return budget, metadata
+
+
+def _propagation_latency(
+    spec: MetricsSpecSlice,
+) -> tuple[float, dict[str, Any], dict[str, Any], list[str]]:
+    inputs_used: dict[str, Any] = {}
+    defaults_used: dict[str, Any] = {}
+    assumptions: list[str] = []
+
+    if not spec.propagation.effects.env_effects:
+        assumptions.append(
+            "Propagation latency uses constant fiber.n_group (env_effects disabled)."
+        )
+        return (
+            total_link_length_m(spec.path) * spec.fiber.n_group / _C_M_S,
+            inputs_used,
+            defaults_used,
+            assumptions,
+        )
+
+    defaults_used["temperature_reference_c"] = _TEMP_REF_C
+    defaults_used["group_delay_temp_coeff_per_c"] = _GROUP_DELAY_TEMP_COEFF_PER_C
+    assumptions.append(
+        "Temperature-aware propagation uses per-segment temp_c and "
+        "a linear group-delay coefficient."
+    )
+
+    delay_s = 0.0
+    for segment in spec.path.segments:
+        segment_temp_c = _TEMP_REF_C if segment.temp_c is None else segment.temp_c
+        n_eff = spec.fiber.n_group * (
+            1.0 + _GROUP_DELAY_TEMP_COEFF_PER_C * (segment_temp_c - _TEMP_REF_C)
+        )
+        delay_s += segment.length_m * n_eff / _C_M_S
+
+    return delay_s, inputs_used, defaults_used, assumptions
+
+
+def _propagation_spread_estimate(spec: MetricsSpecSlice) -> dict[str, float] | None:
+    if not spec.propagation.effects.env_effects:
+        return None
+
+    if not spec.path.segments:
+        return None
+
+    rng = np.random.default_rng(spec.runtime.seed + 17)
+    temps_c = np.array(
+        [
+            _TEMP_REF_C if segment.temp_c is None else float(segment.temp_c)
+            for segment in spec.path.segments
+        ],
+        dtype=float,
+    )
+    lengths_m = np.array([float(segment.length_m) for segment in spec.path.segments], dtype=float)
+
+    jittered_temps = rng.normal(
+        loc=temps_c,
+        scale=_TEMP_SPREAD_SIGMA_C,
+        size=(_TEMP_SPREAD_SAMPLES, len(spec.path.segments)),
+    )
+    n_eff = spec.fiber.n_group * (
+        1.0 + _GROUP_DELAY_TEMP_COEFF_PER_C * (jittered_temps - _TEMP_REF_C)
+    )
+    delays_s = (lengths_m * n_eff / _C_M_S).sum(axis=1)
+    return {
+        "p05_s": float(np.percentile(delays_s, 5)),
+        "p50_s": float(np.percentile(delays_s, 50)),
+        "p95_s": float(np.percentile(delays_s, 95)),
+        "std_s": float(np.std(delays_s)),
+    }
 
 
 def _dsp_group_delay(
