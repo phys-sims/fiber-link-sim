@@ -111,7 +111,7 @@
   ],
   "run_id": "3d74fa6a",
   "seed": 2113,
-  "sim_version": "0.1.0",
+  "sim_version": "1.0.0",
   "spec_hash": "3d74fa6a5939b304bb49ce5cca1e70e7208d8dbe09a556d61e160fbc8150c7a9",
   "stages": {
     "channel": [

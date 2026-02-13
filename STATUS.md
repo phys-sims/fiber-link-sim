@@ -5,7 +5,7 @@
 ## Last updated
 - Date: 2026-02-13
 - By: @openai-codex
-- Scope: Added general and phys-pipeline benchmarking workflow (script modes, docs, and benchmark tests) alongside Phase 4 execution-path tracking.
+- Scope: Bumped package/simulation release version to 1.0.0 and added a contract test to keep provenance.sim_version aligned with project.version.
 
 ---
 
