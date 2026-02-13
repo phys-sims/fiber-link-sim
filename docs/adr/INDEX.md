@@ -15,3 +15,4 @@
 | [ADR-0011](docs/adr/0011-state-refs-artifact-store.md) | 0011-state-refs-artifact-store.md |  |  |  |  |
 | [ADR-0012](docs/adr/0012-latency-budget-model.md) | 0012-latency-budget-model.md |  |  |  |  |
 | [ADR-0013](docs/adr/0013-temperature-aware-latency-and-spread.md) | 0013-temperature-aware-latency-and-spread.md |  |  |  |  |
+| [ADR-0014](docs/adr/0014-phase4-pipeline-cache-scheduler.md) | 0014-phase4-pipeline-cache-scheduler.md |  |  |  |  |

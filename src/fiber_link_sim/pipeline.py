@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from phys_pipeline import SequentialPipeline  # type: ignore[import-untyped]
+from phys_pipeline import SequentialPipeline
 
+import fiber_link_sim._compat  # noqa: F401
 from fiber_link_sim.data_models.spec_models import SimulationSpec
 from fiber_link_sim.data_models.stage_models import (
     ArtifactsSpecSlice,
