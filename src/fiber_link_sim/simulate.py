@@ -23,7 +23,7 @@ from fiber_link_sim.pipeline_execution import run_pipeline
 from fiber_link_sim.stages.base import SimulationState
 from fiber_link_sim.utils import compute_spec_hash
 
-SIM_VERSION = "0.1.0"
+SIM_VERSION = "1.0.0"
 _SIMULATION_CACHE: dict[tuple[str, int], SimulationResult] = {}
 
 

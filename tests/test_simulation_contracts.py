@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import re
 import time
 from pathlib import Path
 from typing import Any, cast
@@ -18,6 +19,7 @@ from fiber_link_sim.utils import compute_spec_hash
 simulate_module = importlib.import_module("fiber_link_sim.simulate")
 
 EXAMPLE_DIR = Path("src/fiber_link_sim/schema/examples")
+PYPROJECT_FILE = Path("pyproject.toml")
 
 
 def _load_example(name: str) -> dict:
@@ -38,6 +40,19 @@ def test_example_specs_validate() -> None:
         spec_data = _load_example(filename)
         spec = SimulationSpec.model_validate(spec_data)
         assert spec.v == "0.2"
+
+
+def test_sim_version_matches_package_release_version() -> None:
+    pyproject_text = PYPROJECT_FILE.read_text()
+    match = re.search(r'^version\s*=\s*"([^"]+)"', pyproject_text, flags=re.MULTILINE)
+    assert match is not None
+    project_version = match.group(1)
+    spec_data = _load_example("ook_smoke.json")
+
+    result = simulate(spec_data)
+
+    assert simulate_module.SIM_VERSION == project_version
+    assert result.provenance.sim_version == project_version
 
 
 @pytest.mark.integration
@@ -67,6 +82,7 @@ def test_simulation_runtime_error_returns_structured_result(monkeypatch: Any) ->
         return TxOutput(signal=None, symbols=np.array([]), params=cast(Any, {}))
 
     monkeypatch.setattr(type(ADAPTERS.tx), "run", _broken_tx_run)
+    simulate_module._SIMULATION_CACHE.clear()
 
     result = simulate(spec_data)
 
