@@ -5,8 +5,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
-import fiber_link_sim._compat  # noqa: F401
-
 from phys_pipeline import (
     CacheConfig,
     DagCache,
@@ -16,6 +14,7 @@ from phys_pipeline import (
     build_cache_backend,
 )
 
+import fiber_link_sim._compat  # noqa: F401
 from fiber_link_sim.stages.base import SimulationState
 
 
@@ -29,7 +28,9 @@ class PipelineExecutionMetadata:
 def _build_linear_nodes(stages: list[Any]) -> list[NodeSpec]:
     nodes: list[NodeSpec] = []
     for index, stage in enumerate(stages):
-        node_id = stage.cfg.name if getattr(stage, "cfg", None) is not None else stage.__class__.__name__
+        node_id = (
+            stage.cfg.name if getattr(stage, "cfg", None) is not None else stage.__class__.__name__
+        )
         deps = [nodes[index - 1].id] if index > 0 else []
         nodes.append(NodeSpec(id=node_id, deps=deps, op_name=node_id, version="v2", stage=stage))
     return nodes
@@ -65,5 +66,9 @@ def run_pipeline(pipeline: Any, state: SimulationState) -> PipelineExecutionMeta
     state.artifacts = final_state.artifacts
     state.artifact_store = final_state.artifact_store
 
-    cache_hits = sum(1 for record in run_result.provenance.get("node_runs", []) if record.get("cache_hit"))
-    return PipelineExecutionMetadata(mode="dag", cache_backend=cache_backend_name, cache_hits=cache_hits)
+    cache_hits = sum(
+        1 for record in run_result.provenance.get("node_runs", []) if record.get("cache_hit")
+    )
+    return PipelineExecutionMetadata(
+        mode="dag", cache_backend=cache_backend_name, cache_hits=cache_hits
+    )

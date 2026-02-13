@@ -96,11 +96,14 @@ pip install -e .
 
 ## Benchmark simulation speed
 
-Use the benchmark helper to get quick runtime statistics for optimization planning:
+Use the benchmark helper for both general runtime tracking and phys-pipeline execution profiling:
 
 ```bash
-python scripts/benchmark_simulate.py --repeat 3
+python scripts/benchmark_simulate.py --mode general --repeat 3
+python scripts/benchmark_simulate.py --mode phys-pipeline --repeat 3
 ```
+
+See `docs/benchmarking.md` for full benchmark modes, output fields, and example commands.
 
 ## Testing
 

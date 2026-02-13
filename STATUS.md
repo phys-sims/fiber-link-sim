@@ -5,7 +5,7 @@
 ## Last updated
 - Date: 2026-02-13
 - By: @openai-codex
-- Scope: Completed phys-pipeline readiness Phase 4 (DagExecutor scheduling path, cache backend wiring, local cache gating, and tests/docs updates).
+- Scope: Added general and phys-pipeline benchmarking workflow (script modes, docs, and benchmark tests) alongside Phase 4 execution-path tracking.
 
 ---
 

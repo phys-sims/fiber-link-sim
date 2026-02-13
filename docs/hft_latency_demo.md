@@ -78,17 +78,29 @@ These tests lock:
 Use the benchmark script:
 
 ```bash
-python scripts/benchmark_simulate.py --repeat 3
+python scripts/benchmark_simulate.py --mode general --repeat 3
 ```
 
 Custom set + JSON output:
 
 ```bash
 python scripts/benchmark_simulate.py \
+  --mode general \
   --spec src/fiber_link_sim/schema/examples/hft_chicago_new_jersey.json \
   --spec src/fiber_link_sim/schema/examples/hft_london_frankfurt.json \
   --repeat 5 \
   --json /tmp/sim_bench.json
+```
+
+Phys-pipeline-specific execution benchmark (sequential vs DAG cache modes):
+
+```bash
+python scripts/benchmark_simulate.py \
+  --mode phys-pipeline \
+  --spec src/fiber_link_sim/schema/examples/hft_chicago_new_jersey.json \
+  --repeat 3 \
+  --warmup 1 \
+  --cache-root /tmp/fiber_link_sim_phys_pipeline_cache
 ```
 
 The output table reports `min/mean/p95/max` per spec.
