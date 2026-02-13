@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Any, Protocol
 
 import numpy as np
-from phys_pipeline.types import hash_ndarray  # type: ignore[import-untyped]
+from phys_pipeline.types import hash_ndarray
+
+import fiber_link_sim._compat  # noqa: F401
 
 
 @dataclass(frozen=True, slots=True)

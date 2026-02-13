@@ -101,9 +101,9 @@ It focuses on **interfaces, determinism, and state/caching semantics** without c
 
 **Work items**
 
-- [ ] **Integrate phys-pipeline caching backend** and ensure stage-level cache hits occur with ref-based state.
-- [ ] **Add a scheduled executor path** (or configuration flag) that exercises phys-pipeline scheduling.
-- [ ] **Remove or gate `_SIMULATION_CACHE`** to avoid conflicts with pipeline caching.
+- [x] **Integrate phys-pipeline caching backend** and ensure stage-level cache hits occur with ref-based state.
+- [x] **Add a scheduled executor path** (or configuration flag) that exercises phys-pipeline scheduling.
+- [x] **Remove or gate `_SIMULATION_CACHE`** to avoid conflicts with pipeline caching.
 
 **Acceptance criteria**
 
@@ -113,9 +113,9 @@ It focuses on **interfaces, determinism, and state/caching semantics** without c
 
 ## Cross-cutting QA & docs updates (all phases)
 
-- [ ] **Update ADRs** when decisions affect State layout, artifact references, or caching policy.
-- [ ] **Update `docs/refs/phys_pipeline_usage.md`** with the final ref-based State policy and artifact backend.
-- [ ] **Add/refresh tests**:
+- [x] **Update ADRs** when decisions affect State layout, artifact references, or caching policy.
+- [x] **Update `docs/refs/phys_pipeline_usage.md`** with the final ref-based State policy and artifact backend.
+- [x] **Add/refresh tests**:
   - Contract tests (example specs validate)
   - Integration tests (end-to-end, status==success)
   - Determinism tests (same spec+seed → same summary)
@@ -138,4 +138,4 @@ It focuses on **interfaces, determinism, and state/caching semantics** without c
 - [x] Phase 1 complete
 - [x] Phase 2 complete
 - [x] Phase 3 complete
-- [ ] Phase 4 complete
+- [x] Phase 4 complete

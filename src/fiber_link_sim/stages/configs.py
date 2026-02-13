@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from phys_pipeline import StageConfig  # type: ignore[import-untyped]
+from phys_pipeline import StageConfig
 
+import fiber_link_sim._compat  # noqa: F401
 from fiber_link_sim.data_models.stage_models import (
     ArtifactsSpecSlice,
     ChannelSpecSlice,

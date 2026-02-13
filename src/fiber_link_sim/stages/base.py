@@ -6,14 +6,15 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
-from phys_pipeline import (  # type: ignore[import-untyped]
+from phys_pipeline import (
     PipelineStage,
     StageConfig,
     StageResult,
     State,
 )
-from phys_pipeline.types import hash_ndarray, hash_small  # type: ignore[import-untyped]
+from phys_pipeline.types import hash_ndarray, hash_small
 
+import fiber_link_sim._compat  # noqa: F401
 from fiber_link_sim.artifacts import ArtifactStore, BlobPayload, InMemoryArtifactStore
 
 

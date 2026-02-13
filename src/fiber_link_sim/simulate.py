@@ -19,11 +19,18 @@ from fiber_link_sim.data_models.spec_models import (
     Summary,
 )
 from fiber_link_sim.pipeline import build_pipeline
+from fiber_link_sim.pipeline_execution import run_pipeline
 from fiber_link_sim.stages.base import SimulationState
 from fiber_link_sim.utils import compute_spec_hash
 
 SIM_VERSION = "0.1.0"
 _SIMULATION_CACHE: dict[tuple[str, int], SimulationResult] = {}
+
+
+def _local_cache_enabled() -> bool:
+    if os.getenv("FIBER_LINK_SIM_PIPELINE_EXECUTOR", "sequential").strip().lower() == "dag":
+        return False
+    return os.getenv("FIBER_LINK_SIM_LOCAL_CACHE", "1").strip().lower() not in {"0", "false", "no"}
 
 
 def _simulate_worker(spec_payload: dict[str, Any], queue: Any) -> None:
@@ -91,9 +98,10 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
 
     spec_hash = compute_spec_hash(spec_model)
     cache_key = (spec_hash, spec_model.runtime.seed)
-    cached = _SIMULATION_CACHE.get(cache_key)
-    if cached is not None:
-        return SimulationResult.model_validate(cached.model_dump())
+    if _local_cache_enabled():
+        cached = _SIMULATION_CACHE.get(cache_key)
+        if cached is not None:
+            return SimulationResult.model_validate(cached.model_dump())
 
     if spec_model.processing.autotune and spec_model.processing.autotune.enabled:
         runtime_s = time.perf_counter() - start
@@ -155,7 +163,15 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
         )
 
     try:
-        pipeline.run(state)
+        execution = run_pipeline(pipeline, state)
+        state.meta.setdefault("pipeline_execution", {})
+        state.meta["pipeline_execution"].update(
+            {
+                "mode": execution.mode,
+                "cache_backend": execution.cache_backend,
+                "cache_hits": execution.cache_hits,
+            }
+        )
     except Exception as exc:
         if isinstance(exc, SystemError) and not os.environ.get("FIBER_LINK_SIM_NO_SUBPROCESS"):
             return _run_in_subprocess(spec_model.model_dump())
@@ -236,5 +252,6 @@ def simulate(spec: dict[str, Any] | str | Path | SimulationSpec) -> SimulationRe
         warnings=warnings,
         artifacts=[Artifact.model_validate(artifact) for artifact in artifacts],
     )
-    _SIMULATION_CACHE[cache_key] = result
+    if _local_cache_enabled():
+        _SIMULATION_CACHE[cache_key] = result
     return SimulationResult.model_validate(result.model_dump())

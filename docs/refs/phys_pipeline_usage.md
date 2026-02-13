@@ -21,6 +21,22 @@ and return a `StageResult` (state + scalar metrics + optional artifacts).
 In this repo, the concrete `SimulationState` and stage configs now *inherit from phys-pipeline base types* to ensure
 compatibility with phys-pipeline optimizers and caching tools.
 
+## Executor and caching modes (Phase 4)
+
+Simulation execution supports two internal paths:
+
+- `FIBER_LINK_SIM_PIPELINE_EXECUTOR=sequential` (default): run `SequentialPipeline` directly.
+- `FIBER_LINK_SIM_PIPELINE_EXECUTOR=dag`: run through `DagExecutor` with a linear `NodeSpec` chain,
+  which exercises phys-pipeline scheduling even when dependencies are strictly ordered.
+
+When DAG mode is enabled, cache backends are configured with:
+
+- `FIBER_LINK_SIM_PIPELINE_CACHE_BACKEND=disk|shared-disk|none` (default `disk`)
+- `FIBER_LINK_SIM_PIPELINE_CACHE_ROOT=<path>` (default `.phys_pipeline_cache`)
+
+To avoid double-caching conflicts, in-process `_SIMULATION_CACHE` is automatically disabled while
+DAG mode is active (and can be disabled explicitly with `FIBER_LINK_SIM_LOCAL_CACHE=0`).
+
 ## What is `State`?
 
 **Rule:** the *type* of State stays constant across stages; fields are gradually populated.

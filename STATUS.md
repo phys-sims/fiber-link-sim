@@ -3,9 +3,9 @@
 > **Source of truth:** Update this file whenever behavior, tests, or schemas change.
 
 ## Last updated
-- Date: 2026-02-10
+- Date: 2026-02-13
 - By: @openai-codex
-- Scope: Added HFT latency demo assets (temperature-aware latency + spread tests, CLI demo docs, and benchmark script).
+- Scope: Added general and phys-pipeline benchmarking workflow (script modes, docs, and benchmark tests) alongside Phase 4 execution-path tracking.
 
 ---
 
@@ -84,4 +84,4 @@
 - [x] Populate CI and test runtime data after next green run.
 - [x] Record example spec pass/fail results from contract tests.
 - [x] Execute phys-pipeline readiness roadmap (docs/roadmaps/phys_pipeline_readiness.md) through Phase 3.
-- [ ] Integrate phys-pipeline caching backend + scheduled executor once available.
+- [x] Integrate phys-pipeline caching backend + scheduled executor once available.
