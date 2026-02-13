@@ -5,7 +5,7 @@
 ## Last updated
 - Date: 2026-02-13
 - By: @openai-codex
-- Scope: Bumped package/simulation release version to 1.0.0 and added a contract test to keep provenance.sim_version aligned with project.version.
+- Scope: Refreshed CI gate outcomes and test-suite runtime measurements with current local run data.
 
 ---
 
@@ -13,10 +13,10 @@
 
 | Check | Command | Status | Last run | Notes |
 | --- | --- | --- | --- | --- |
-| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-09 | Warning about deprecated default_stages. |
-| Type checking (mypy) | `python -m mypy src` | ✅ | 2026-02-09 |  |
-| Pytest fast | `python -m pytest -q -m "not slow" --durations=10` | ✅ | 2026-02-09 | OptiCommPy runtime warnings observed in story regression. |
-| Pytest slow | `python -m pytest -q -m slow --durations=10` | ✅ | 2026-02-09 | OptiCommPy runtime warnings observed. |
+| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-13 | Warning about deprecated `default_stages` names (migration pending in `.pre-commit-config.yaml`). |
+| Type checking (mypy) | `python -m mypy src` | ✅ | 2026-02-13 | Success: no issues found in 26 source files. |
+| Pytest fast (required gate) | `python -m pytest -q -m "not slow" --durations=10 --cov=fiber_link_sim --cov-report=term-missing:skip-covered` | ✅ | 2026-02-13 | 37 passed, 12 deselected, 1 warning; completed in 123.80s test time. |
+| Pytest slow (supplemental) | `python -m pytest -q -m slow --durations=10` | ✅ | 2026-02-13 | 12 passed, 37 deselected, 13 warnings; completed in 380.24s test time. |
 
 ---
 
@@ -24,9 +24,9 @@
 
 | Suite | Definition | Typical runtime | Slowest tests (top 3) | Last measured | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Fast | `-m "not slow" --durations=10` | ~85s | QPSK story manifest, DSP demap, ADC quantization | 2026-02-09 |  |
-| Slow | `-m slow --durations=10` | ~6m | QPSK effects toggle, contracts | 2026-02-09 |  |
-| Full | `-m "slow or not slow" --durations=10` | TBD | TBD | YYYY-MM-DD |  |
+| Fast | `-m "not slow" --durations=10 --cov=fiber_link_sim --cov-report=term-missing:skip-covered` | ~2m04s (123.80s test time / 128.14s wall) | `test_qpsk_story_manifest_structure`, `test_sim_version_matches_package_release_version`, `test_demap_outputs_hard_bits_and_llrs` | 2026-02-13 | Includes required coverage reporting gate. |
+| Slow | `-m slow --durations=10` | ~6m20s (380.24s test time / 383.95s wall) | `test_qpsk_longhaul_effects_toggle_impact`, `test_simulation_results_validate`, `test_adc_bit_depth_impacts_metrics` | 2026-02-13 | OptiCommPy runtime warnings present but non-fatal. |
+| Full | `-m "slow or not slow" --durations=10` | ~12m29s (749.06s test time / 752.73s wall) | `test_simulation_results_validate`, `test_simulation_determinism[qpsk_longhaul_manakov.json]`, `test_qpsk_longhaul_effects_toggle_impact` | 2026-02-13 | 49 passed with 24 runtime warnings from OptiCommPy/numpy paths. |
 
 ---
 
