@@ -12,8 +12,8 @@ This repository is the **physics-core** for a fiber-optic communication link sim
 - **Deterministic reproducibility:** Same spec + same seed must produce the same results (within defined float tolerances). No hidden randomness.
 
 ## Key references (must read first)
-- `docs/physics_context.md` — physics intent and block mapping.
-- `docs/phys_pipeline_usage.md` — phys-pipeline integration patterns (metrics vs artifacts, State, determinism).
+- `docs/refs/physics_context.md` — physics intent and block mapping.
+- `docs/refs/phys_pipeline_usage.md` — phys-pipeline integration patterns (metrics vs artifacts, State, determinism).
 - `src/fiber_physics/schema/README.md` — meaning of all spec flags + rationale + boundaries.
 - `src/fiber_physics/schema/simulation_spec.schema.v0.1.json` — input contract.
 - `src/fiber_physics/schema/simulation_result.schema.v0.2.json` — output contract.

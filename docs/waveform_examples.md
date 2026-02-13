@@ -20,4 +20,4 @@ communication (not as a numerical validation fixture).
 
 * These plots are generated from deterministic example symbol streams to keep docs stable.
 * For full physics runs, see `src/fiber_link_sim/schema/examples/` and the pipeline docs in
-  `docs/phys_pipeline_usage.md`.
+  `docs/refs/phys_pipeline_usage.md`.

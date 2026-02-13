@@ -28,8 +28,8 @@ contract used by upstream orchestration/UI layers.
 
 Key references for deeper details live in:
 
-* `docs/physics_context.md`
-* `docs/phys_pipeline_usage.md`
+* `docs/refs/physics_context.md`
+* `docs/refs/phys_pipeline_usage.md`
 * `src/fiber_link_sim/schema/README.md`
 * `docs/stages_and_flags.md`
 * `docs/waveform_examples.md`

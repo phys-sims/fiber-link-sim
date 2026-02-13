@@ -58,7 +58,7 @@ def cmd_reindex(_args):
         date = meta.get("date","")
         area = meta.get("area","")
         tags = meta.get("tags","")
-        link = f"docs/adr/{base}"
+        link = f"./{base}"
         rows.append((int(n), f"[ADR-{n}]({link})", title, status, date, area, tags))
     lines = ["# ADR Index", "", "| ADR | Title | Status | Date | Area | Tags |", "|---:|---|---|---|---|---|"]
     for _n, a, t, s, d, ar, tg in rows:
