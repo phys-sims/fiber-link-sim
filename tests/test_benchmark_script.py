@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import os
 
-from scripts.benchmark_simulate import _env_overrides
+from fiber_link_sim.benchmarking import env_overrides
 
 
 def test_env_overrides_restores_values(monkeypatch) -> None:
     monkeypatch.setenv("FIBER_LINK_SIM_PIPELINE_EXECUTOR", "sequential")
 
-    with _env_overrides(
+    with env_overrides(
         {
             "FIBER_LINK_SIM_PIPELINE_EXECUTOR": "dag",
             "FIBER_LINK_SIM_PIPELINE_CACHE_BACKEND": "none",

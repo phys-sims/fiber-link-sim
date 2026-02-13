@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import statistics
 import time
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
+from fiber_link_sim.benchmarking import env_overrides
 from fiber_link_sim.simulate import simulate
 
 DEFAULT_EXAMPLES = [
@@ -18,21 +17,6 @@ DEFAULT_EXAMPLES = [
 ]
 
 DEFAULT_PIPELINE_SPEC = "src/fiber_link_sim/schema/examples/qpsk_longhaul_1span.json"
-
-
-@contextmanager
-def _env_overrides(pairs: dict[str, str]) -> Iterator[None]:
-    original: dict[str, str | None] = {key: os.environ.get(key) for key in pairs}
-    try:
-        for key, value in pairs.items():
-            os.environ[key] = value
-        yield
-    finally:
-        for key, previous in original.items():
-            if previous is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = previous
 
 
 def _parse_args() -> argparse.Namespace:
@@ -127,7 +111,7 @@ def _bench_phys_pipeline(
         "FIBER_LINK_SIM_PIPELINE_CACHE_BACKEND": "none",
         "FIBER_LINK_SIM_LOCAL_CACHE": "0",
     }
-    with _env_overrides(dag_no_cache_env):
+    with env_overrides(dag_no_cache_env):
         dag_no_cache_timings = _run_repeated(payload, repeat=repeat, warmup=warmup)
     rows.append(
         _summarize(
@@ -157,7 +141,7 @@ def _bench_phys_pipeline(
         "FIBER_LINK_SIM_PIPELINE_CACHE_ROOT": str(cache_root),
         "FIBER_LINK_SIM_LOCAL_CACHE": "0",
     }
-    with _env_overrides(dag_cache_env):
+    with env_overrides(dag_cache_env):
         cold_timings = _run_repeated(payload, repeat=repeat, warmup=0)
         warm_timings = _run_repeated(payload, repeat=repeat, warmup=max(1, warmup))
 
