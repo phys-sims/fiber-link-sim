@@ -81,8 +81,8 @@
 
 ### References
 - ADR-0003 (OptiCommPy adapter)
-- docs/physics_context.md
-- docs/phys_pipeline_usage.md
+- docs/refs/physics_context.md
+- docs/refs/phys_pipeline_usage.md
 
 ### Changelog
 - `2025-09-27` — Proposed by @fiber-physics
