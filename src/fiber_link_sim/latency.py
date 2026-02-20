@@ -10,10 +10,6 @@ from fiber_link_sim.data_models.stage_models import DspSpecSlice, MetricsSpecSli
 from fiber_link_sim.utils import bits_per_symbol, total_link_length_m
 
 _C_M_S = 299_792_458.0
-_TEMP_REF_C = 20.0
-_GROUP_DELAY_TEMP_COEFF_PER_C = 7e-6
-_TEMP_SPREAD_SIGMA_C = 1.0
-_TEMP_SPREAD_SAMPLES = 512
 
 
 def compute_latency_budget(
@@ -26,6 +22,9 @@ def compute_latency_budget(
     total_length_m = float(stats.get("total_length_m") or total_link_length_m(spec.path))
     inputs_used["path_length_m"] = total_length_m
     inputs_used["fiber_n_group"] = spec.fiber.n_group
+    env_inputs, env_defaults = _environment_inputs(spec)
+    inputs_used.update(env_inputs)
+    defaults_used.update(env_defaults)
     propagation_s, propagation_inputs, propagation_defaults, propagation_assumptions = (
         _propagation_latency(spec)
     )
@@ -233,20 +232,22 @@ def _propagation_latency(
             assumptions,
         )
 
-    defaults_used["temperature_reference_c"] = _TEMP_REF_C
-    defaults_used["group_delay_temp_coeff_per_c"] = _GROUP_DELAY_TEMP_COEFF_PER_C
     assumptions.append(
         "Temperature-aware propagation uses per-segment temp_c and "
         "a linear group-delay coefficient."
     )
 
+    env = spec.latency_model.environment
+
     delay_s = 0.0
     for segment in spec.path.segments:
-        segment_temp_c = _TEMP_REF_C if segment.temp_c is None else segment.temp_c
-        n_eff = spec.fiber.n_group * (
-            1.0 + _GROUP_DELAY_TEMP_COEFF_PER_C * (segment_temp_c - _TEMP_REF_C)
+        segment_temp_c = (
+            env.temperature_reference_c if segment.temp_c is None else float(segment.temp_c)
         )
-        delay_s += segment.length_m * n_eff / _C_M_S
+        n_eff = spec.fiber.n_group * (
+            1.0 + env.group_delay_temp_coeff_per_c * (segment_temp_c - env.temperature_reference_c)
+        )
+        delay_s += float(segment.length_m) * n_eff / _C_M_S
 
     return delay_s, inputs_used, defaults_used, assumptions
 
@@ -258,10 +259,14 @@ def _propagation_spread_estimate(spec: MetricsSpecSlice) -> dict[str, float] | N
     if not spec.path.segments:
         return None
 
+    env = spec.latency_model.environment
+    if env.spread.sampling_policy != "normal_mc":
+        return None
+
     rng = np.random.default_rng(spec.runtime.seed + 17)
     temps_c = np.array(
         [
-            _TEMP_REF_C if segment.temp_c is None else float(segment.temp_c)
+            env.temperature_reference_c if segment.temp_c is None else float(segment.temp_c)
             for segment in spec.path.segments
         ],
         dtype=float,
@@ -270,11 +275,11 @@ def _propagation_spread_estimate(spec: MetricsSpecSlice) -> dict[str, float] | N
 
     jittered_temps = rng.normal(
         loc=temps_c,
-        scale=_TEMP_SPREAD_SIGMA_C,
-        size=(_TEMP_SPREAD_SAMPLES, len(spec.path.segments)),
+        scale=env.spread.sigma_c,
+        size=(env.spread.samples, len(spec.path.segments)),
     )
     n_eff = spec.fiber.n_group * (
-        1.0 + _GROUP_DELAY_TEMP_COEFF_PER_C * (jittered_temps - _TEMP_REF_C)
+        1.0 + env.group_delay_temp_coeff_per_c * (jittered_temps - env.temperature_reference_c)
     )
     delays_s = (lengths_m * n_eff / _C_M_S).sum(axis=1)
     return {
@@ -283,6 +288,41 @@ def _propagation_spread_estimate(spec: MetricsSpecSlice) -> dict[str, float] | N
         "p95_s": float(np.percentile(delays_s, 95)),
         "std_s": float(np.std(delays_s)),
     }
+
+
+def _environment_inputs(spec: MetricsSpecSlice) -> tuple[dict[str, Any], dict[str, Any]]:
+    env = spec.latency_model.environment
+    env_fields = spec.latency_model.model_fields_set
+    spread_fields = env.spread.model_fields_set
+
+    inputs_used = {
+        "environment.version": env.version,
+        "environment.temperature_reference_c": float(env.temperature_reference_c),
+        "environment.group_delay_temp_coeff_per_c": float(env.group_delay_temp_coeff_per_c),
+        "environment.spread.sigma_c": float(env.spread.sigma_c),
+        "environment.spread.samples": int(env.spread.samples),
+        "environment.spread.sampling_policy": env.spread.sampling_policy,
+    }
+    defaults_used: dict[str, Any] = {}
+
+    if "environment" not in env_fields:
+        defaults_used["environment"] = "default"
+    if "temperature_reference_c" not in env.model_fields_set:
+        defaults_used["environment.temperature_reference_c"] = float(env.temperature_reference_c)
+    if "group_delay_temp_coeff_per_c" not in env.model_fields_set:
+        defaults_used["environment.group_delay_temp_coeff_per_c"] = float(
+            env.group_delay_temp_coeff_per_c
+        )
+    if "spread" not in env.model_fields_set:
+        defaults_used["environment.spread"] = "default"
+    if "sigma_c" not in spread_fields:
+        defaults_used["environment.spread.sigma_c"] = float(env.spread.sigma_c)
+    if "samples" not in spread_fields:
+        defaults_used["environment.spread.samples"] = int(env.spread.samples)
+    if "sampling_policy" not in spread_fields:
+        defaults_used["environment.spread.sampling_policy"] = env.spread.sampling_policy
+
+    return inputs_used, defaults_used
 
 
 def _dsp_group_delay(

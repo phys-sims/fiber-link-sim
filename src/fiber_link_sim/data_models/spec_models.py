@@ -241,6 +241,24 @@ class Runtime(BaseModel):
     max_runtime_s: float = Field(..., gt=0)
 
 
+SpreadSamplingPolicy = Literal["normal_mc"]
+
+
+class PropagationSpreadModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    sigma_c: float = Field(1.0, ge=0.0, le=20.0)
+    samples: int = Field(512, ge=16, le=50_000)
+    sampling_policy: SpreadSamplingPolicy = "normal_mc"
+
+
+class EnvironmentModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    version: Literal["v1"] = "v1"
+    temperature_reference_c: float = Field(20.0, ge=-60.0, le=120.0)
+    group_delay_temp_coeff_per_c: float = Field(7e-6, ge=0.0, le=1e-3)
+    spread: PropagationSpreadModel = Field(default_factory=lambda: PropagationSpreadModel())
+
+
 class LatencyModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
     serialization_weight: float = Field(..., ge=0)
@@ -251,6 +269,7 @@ class LatencyModel(BaseModel):
     hardware_pipeline: HardwarePipelineModel = Field(
         default_factory=lambda: HardwarePipelineModel()
     )
+    environment: EnvironmentModel = Field(default_factory=lambda: EnvironmentModel())
 
 
 class QueueingModel(BaseModel):

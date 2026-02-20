@@ -5,7 +5,7 @@
 ## Last updated
 - Date: 2026-02-20
 - By: @openai-codex
-- Scope: Versioned latency model to explicit queueing/framing/hardware terms, added analytic tests, and refreshed schema/docs references.
+- Scope: Added versioned latency environment controls (temperature coeff/spread/sampling), refactored propagation spread modeling, expanded latency temperature tests, and synchronized schema/docs.
 
 ---
 

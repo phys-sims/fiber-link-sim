@@ -179,6 +179,36 @@
       "title": "Effects",
       "type": "object"
     },
+    "EnvironmentModel": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "v1",
+          "default": "v1",
+          "title": "Version",
+          "type": "string"
+        },
+        "temperature_reference_c": {
+          "default": 20.0,
+          "maximum": 120.0,
+          "minimum": -60.0,
+          "title": "Temperature Reference C",
+          "type": "number"
+        },
+        "group_delay_temp_coeff_per_c": {
+          "default": 7e-06,
+          "maximum": 0.001,
+          "minimum": 0.0,
+          "title": "Group Delay Temp Coeff Per C",
+          "type": "number"
+        },
+        "spread": {
+          "$ref": "#/$defs/PropagationSpreadModel"
+        }
+      },
+      "title": "EnvironmentModel",
+      "type": "object"
+    },
     "Fec": {
       "additionalProperties": false,
       "properties": {
@@ -416,6 +446,9 @@
         },
         "hardware_pipeline": {
           "$ref": "#/$defs/HardwarePipelineModel"
+        },
+        "environment": {
+          "$ref": "#/$defs/EnvironmentModel"
         }
       },
       "required": [
@@ -566,6 +599,33 @@
         "model"
       ],
       "title": "Propagation",
+      "type": "object"
+    },
+    "PropagationSpreadModel": {
+      "additionalProperties": false,
+      "properties": {
+        "sigma_c": {
+          "default": 1.0,
+          "maximum": 20.0,
+          "minimum": 0.0,
+          "title": "Sigma C",
+          "type": "number"
+        },
+        "samples": {
+          "default": 512,
+          "maximum": 50000,
+          "minimum": 16,
+          "title": "Samples",
+          "type": "integer"
+        },
+        "sampling_policy": {
+          "const": "normal_mc",
+          "default": "normal_mc",
+          "title": "Sampling Policy",
+          "type": "string"
+        }
+      },
+      "title": "PropagationSpreadModel",
       "type": "object"
     },
     "QueueingModel": {
@@ -906,6 +966,5 @@
     "outputs"
   ],
   "title": "SimulationSpec",
-  "type": "object",
-  "$id": "fiber-physics.simulation-spec.schema.v0.3"
+  "type": "object"
 }

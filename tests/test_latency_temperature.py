@@ -1,16 +1,25 @@
 from __future__ import annotations
 
 from math import isclose
+from typing import Any
 
 from fiber_link_sim.data_models.spec_models import SimulationSpec
 from fiber_link_sim.data_models.stage_models import MetricsSpecSlice
 from fiber_link_sim.latency import compute_latency_budget
 
 
-def _temperature_spec(temp_c: float, *, env_effects: bool = True, seed: int = 11) -> SimulationSpec:
+def _temperature_spec(
+    temp_c: float,
+    *,
+    env_effects: bool = True,
+    seed: int = 11,
+    group_delay_temp_coeff_per_c: float = 7e-6,
+    sigma_c: float = 1.0,
+    sampling_policy: str = "normal_mc",
+) -> SimulationSpec:
     return SimulationSpec.model_validate(
         {
-            "v": "0.2",
+            "v": "0.3",
             "path": {
                 "segments": [{"length_m": 100_000.0, "temp_c": temp_c}],
                 "geo": {"enabled": False},
@@ -64,6 +73,15 @@ def _temperature_spec(temp_c: float, *, env_effects: bool = True, seed: int = 11
                 "serialization_weight": 1.0,
                 "processing_weight": 0.0,
                 "processing_floor_s": 0.0,
+                "environment": {
+                    "version": "v1",
+                    "group_delay_temp_coeff_per_c": group_delay_temp_coeff_per_c,
+                    "spread": {
+                        "sigma_c": sigma_c,
+                        "samples": 512,
+                        "sampling_policy": sampling_policy,
+                    },
+                },
             },
             "runtime": {
                 "seed": seed,
@@ -76,6 +94,10 @@ def _temperature_spec(temp_c: float, *, env_effects: bool = True, seed: int = 11
     )
 
 
+def _spread(meta: dict[str, Any]) -> dict[str, float]:
+    return meta["inputs_used"]["propagation_spread_s"]
+
+
 def test_temperature_increases_propagation_when_env_effects_enabled() -> None:
     cool = _temperature_spec(5.0)
     hot = _temperature_spec(35.0)
@@ -84,7 +106,8 @@ def test_temperature_increases_propagation_when_env_effects_enabled() -> None:
     hot_budget, _ = compute_latency_budget(MetricsSpecSlice.from_spec(hot), {})
 
     assert hot_budget["propagation_s"] > cool_budget["propagation_s"]
-    assert "temperature_reference_c" in cool_meta["defaults_used"]
+    assert "environment.group_delay_temp_coeff_per_c" in cool_meta["inputs_used"]
+    assert "environment.spread.sigma_c" in cool_meta["inputs_used"]
     assert "propagation_spread_s" in cool_meta["inputs_used"]
 
 
@@ -95,10 +118,30 @@ def test_temperature_spread_is_deterministic_for_same_seed() -> None:
     _, meta_a = compute_latency_budget(MetricsSpecSlice.from_spec(spec_a), {})
     _, meta_b = compute_latency_budget(MetricsSpecSlice.from_spec(spec_b), {})
 
-    spread_a = meta_a["inputs_used"]["propagation_spread_s"]
-    spread_b = meta_b["inputs_used"]["propagation_spread_s"]
+    spread_a = _spread(meta_a)
+    spread_b = _spread(meta_b)
     assert spread_a == spread_b
     assert spread_a["p95_s"] > spread_a["p05_s"]
+
+
+def test_spread_sigma_sensitivity_affects_std() -> None:
+    low_sigma_spec = _temperature_spec(20.0, sigma_c=0.2, seed=7)
+    high_sigma_spec = _temperature_spec(20.0, sigma_c=4.0, seed=7)
+
+    _, low_meta = compute_latency_budget(MetricsSpecSlice.from_spec(low_sigma_spec), {})
+    _, high_meta = compute_latency_budget(MetricsSpecSlice.from_spec(high_sigma_spec), {})
+
+    assert _spread(high_meta)["std_s"] > _spread(low_meta)["std_s"]
+
+
+def test_temp_coefficient_sensitivity_affects_spread() -> None:
+    low_coeff_spec = _temperature_spec(20.0, group_delay_temp_coeff_per_c=2e-6, seed=13)
+    high_coeff_spec = _temperature_spec(20.0, group_delay_temp_coeff_per_c=1.2e-5, seed=13)
+
+    _, low_meta = compute_latency_budget(MetricsSpecSlice.from_spec(low_coeff_spec), {})
+    _, high_meta = compute_latency_budget(MetricsSpecSlice.from_spec(high_coeff_spec), {})
+
+    assert _spread(high_meta)["std_s"] > _spread(low_meta)["std_s"]
 
 
 def test_temperature_ignored_when_env_effects_disabled() -> None:
