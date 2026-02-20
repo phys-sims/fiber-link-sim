@@ -37,17 +37,25 @@ def compute_latency_budget(
     if spread is not None:
         inputs_used["propagation_spread_s"] = spread
 
+    bits_per_sym = bits_per_symbol(spec.signal)
     payload_bits = int(spec.signal.frame.payload_bits)
+    framing_bits, framing_defaults, framing_inputs, framing_assumptions = _framing_bits(spec)
+    defaults_used.update(framing_defaults)
+    inputs_used.update(framing_inputs)
+    assumptions.extend(framing_assumptions)
+
     inputs_used["payload_bits"] = payload_bits
     inputs_used["symbol_rate_baud"] = spec.signal.symbol_rate_baud
-    inputs_used["bits_per_symbol"] = bits_per_symbol(spec.signal)
-    if spec.signal.frame.preamble_bits or spec.signal.frame.pilot_bits:
-        assumptions.append(
-            "Serialization latency uses payload_bits only; framing overhead ignored."
-        )
+    inputs_used["bits_per_symbol"] = bits_per_sym
+
     serialization_s = (
         payload_bits
-        / (spec.signal.symbol_rate_baud * bits_per_symbol(spec.signal))
+        / (spec.signal.symbol_rate_baud * bits_per_sym)
+        * spec.latency_model.serialization_weight
+    )
+    framing_overhead_s = (
+        framing_bits
+        / (spec.signal.symbol_rate_baud * bits_per_sym)
         * spec.latency_model.serialization_weight
     )
 
@@ -71,15 +79,23 @@ def compute_latency_budget(
     inputs_used.update(fec_inputs)
     assumptions.extend(fec_assumptions)
 
-    queueing_s = 0.0
-    defaults_used["queueing_s"] = queueing_s
-    assumptions.append("Queueing latency set to 0.0 (no buffering model).")
+    queueing_s, queue_defaults, queue_inputs, queue_assumptions = _queueing_latency(spec)
+    defaults_used.update(queue_defaults)
+    inputs_used.update(queue_inputs)
+    assumptions.extend(queue_assumptions)
+
+    hardware_pipeline_s, hw_defaults, hw_inputs, hw_assumptions = _hardware_pipeline_latency(spec)
+    defaults_used.update(hw_defaults)
+    inputs_used.update(hw_inputs)
+    assumptions.extend(hw_assumptions)
 
     total_s = (
         propagation_s
         + serialization_s
+        + framing_overhead_s
         + dsp_group_delay_s
         + fec_block_s
+        + hardware_pipeline_s
         + queueing_s
         + processing_s
     )
@@ -87,8 +103,10 @@ def compute_latency_budget(
     budget = {
         "propagation_s": propagation_s,
         "serialization_s": serialization_s,
+        "framing_overhead_s": framing_overhead_s,
         "dsp_group_delay_s": dsp_group_delay_s,
         "fec_block_s": fec_block_s,
+        "hardware_pipeline_s": hardware_pipeline_s,
         "queueing_s": queueing_s,
         "processing_s": processing_s,
         "total_s": total_s,
@@ -97,9 +115,104 @@ def compute_latency_budget(
         "assumptions": assumptions,
         "inputs_used": inputs_used,
         "defaults_used": defaults_used,
-        "schema_version": "v0.2",
+        "schema_version": "v0.3",
     }
     return budget, metadata
+
+
+def _queueing_latency(
+    spec: MetricsSpecSlice,
+) -> tuple[float, dict[str, Any], dict[str, Any], list[str]]:
+    assumptions: list[str] = []
+    defaults_used: dict[str, Any] = {}
+    inputs_used: dict[str, Any] = {}
+
+    queueing_model = spec.latency_model.queueing
+    total_s = (
+        queueing_model.ingress_buffer_s
+        + queueing_model.egress_buffer_s
+        + queueing_model.scheduler_tick_s
+    )
+
+    queue_fields = queueing_model.model_fields_set
+    for field_name in ("ingress_buffer_s", "egress_buffer_s", "scheduler_tick_s"):
+        value = float(getattr(queueing_model, field_name))
+        inputs_used[f"queueing.{field_name}"] = value
+        if field_name not in queue_fields:
+            defaults_used[f"queueing.{field_name}"] = value
+
+    assumptions.append("Queueing latency is ingress + egress buffering + scheduler tick.")
+    return total_s, defaults_used, inputs_used, assumptions
+
+
+def _hardware_pipeline_latency(
+    spec: MetricsSpecSlice,
+) -> tuple[float, dict[str, Any], dict[str, Any], list[str]]:
+    assumptions: list[str] = ["Hardware pipeline latency sums fixed TX/RX/DSP/FEC delays."]
+    defaults_used: dict[str, Any] = {}
+    inputs_used: dict[str, Any] = {}
+
+    hw = spec.latency_model.hardware_pipeline
+    total_s = hw.tx_fixed_s + hw.rx_fixed_s + hw.dsp_fixed_s + hw.fec_fixed_s
+    hw_fields = hw.model_fields_set
+    for field_name in ("tx_fixed_s", "rx_fixed_s", "dsp_fixed_s", "fec_fixed_s"):
+        value = float(getattr(hw, field_name))
+        inputs_used[f"hardware_pipeline.{field_name}"] = value
+        if field_name not in hw_fields:
+            defaults_used[f"hardware_pipeline.{field_name}"] = value
+
+    return total_s, defaults_used, inputs_used, assumptions
+
+
+def _framing_bits(
+    spec: MetricsSpecSlice,
+) -> tuple[int, dict[str, Any], dict[str, Any], list[str]]:
+    assumptions: list[str] = []
+    defaults_used: dict[str, Any] = {}
+    inputs_used: dict[str, Any] = {}
+
+    framing = spec.latency_model.framing
+    framing_fields = framing.model_fields_set
+
+    preamble_bits = int(spec.signal.frame.preamble_bits) if framing.include_preamble_bits else 0
+    pilot_bits = int(spec.signal.frame.pilot_bits) if framing.include_pilot_bits else 0
+    if not framing.include_preamble_bits and spec.signal.frame.preamble_bits:
+        assumptions.append("Framing preamble bits excluded from latency by configuration.")
+    if not framing.include_pilot_bits and spec.signal.frame.pilot_bits:
+        assumptions.append("Framing pilot bits excluded from latency by configuration.")
+
+    overhead_bits = 0.0
+    fec_mode = framing.fec_overhead_mode
+    if fec_mode == "auto_from_code_rate":
+        code_rate = float(spec.processing.fec.code_rate)
+        if code_rate <= 0:
+            assumptions.append(
+                "FEC code rate non-positive; automatic framing overhead set to 0 bits."
+            )
+        else:
+            overhead_bits = int(round(spec.signal.frame.payload_bits * ((1.0 / code_rate) - 1.0)))
+        inputs_used["framing.fec_auto_code_rate"] = code_rate
+    elif fec_mode == "fixed_ratio":
+        ratio = float(framing.fec_overhead_ratio or 0.0)
+        overhead_bits = int(round(spec.signal.frame.payload_bits * ratio))
+        inputs_used["framing.fec_overhead_ratio"] = ratio
+
+    for field_name in (
+        "include_preamble_bits",
+        "include_pilot_bits",
+        "fec_overhead_mode",
+        "fec_overhead_ratio",
+    ):
+        if field_name not in framing_fields:
+            defaults_used[f"framing.{field_name}"] = getattr(framing, field_name)
+
+    inputs_used["framing.preamble_bits_counted"] = preamble_bits
+    inputs_used["framing.pilot_bits_counted"] = pilot_bits
+    inputs_used["framing.fec_overhead_bits"] = int(overhead_bits)
+
+    total_framing_bits = int(preamble_bits + pilot_bits + overhead_bits)
+    assumptions.append("Framing overhead latency is converted from counted framing bits.")
+    return total_framing_bits, defaults_used, inputs_used, assumptions
 
 
 def _propagation_latency(

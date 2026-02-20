@@ -10,8 +10,8 @@ If agents touch anything, **they should not change the meaning of fields silentl
 
 Authoritative copies ship with the package:
 
-- `src/fiber_link_sim/schema/simulation_spec.schema.v0.2.json`
-- `src/fiber_link_sim/schema/simulation_result.schema.v0.2.json`
+- `src/fiber_link_sim/schema/simulation_spec.schema.v0.3.json`
+- `src/fiber_link_sim/schema/simulation_result.schema.v0.3.json`
 
 A human-facing mirror can exist at repo root (`schema/`) but should be generated from the authoritative copy, not hand-edited.
 
@@ -96,9 +96,22 @@ How fiber propagation is simulated.
 
 ### `latency_model`
 Controls how latency is broken down in the Metrics stage.
-- `serialization_weight`: multiplier on serialization delay derived from payload bits and symbol rate.
+- `serialization_weight`: multiplier on bit-serialization terms.
 - `processing_weight`: multiplier applied to `runtime.n_symbols / signal.symbol_rate_baud` to estimate processing time.
 - `processing_floor_s`: minimum processing latency applied even for tiny runs.
+- `framing`: explicit framing/overhead assumptions.
+  - `include_preamble_bits`, `include_pilot_bits`: include those frame fields in a separate framing term.
+  - `fec_overhead_mode`: `none`, `auto_from_code_rate`, or `fixed_ratio`.
+  - `fec_overhead_ratio`: required for `fixed_ratio`.
+- `queueing`: explicit buffering assumptions (`ingress_buffer_s + egress_buffer_s + scheduler_tick_s`).
+- `hardware_pipeline`: fixed hardware delays (`tx_fixed_s + rx_fixed_s + dsp_fixed_s + fec_fixed_s`).
+
+Latency formulas (seconds):
+- `serialization_s = payload_bits / (symbol_rate_baud * bits_per_symbol) * serialization_weight`
+- `framing_overhead_s = framing_bits / (symbol_rate_baud * bits_per_symbol) * serialization_weight`
+- `queueing_s = ingress_buffer_s + egress_buffer_s + scheduler_tick_s`
+- `hardware_pipeline_s = tx_fixed_s + rx_fixed_s + dsp_fixed_s + fec_fixed_s`
+- `total_s = propagation_s + serialization_s + framing_overhead_s + dsp_group_delay_s + fec_block_s + hardware_pipeline_s + queueing_s + processing_s`
 
 ### `runtime`
 Controls reproducibility and compute.
@@ -117,8 +130,8 @@ Controls artifact emission.
 
 - `status`: success or error (mutually exclusive summary/error)
 - `summary`: metrics + latency budget + throughput numbers (small JSON)
-- `summary.latency_s`: structured `LatencyBudget` with `*_s` fields
-- `summary.latency_metadata`: assumptions, inputs, defaults, and schema version for the latency budget (includes deterministic propagation spread percentiles when env effects are enabled)
+- `summary.latency_s`: structured `LatencyBudget` with explicit modeled terms (`propagation_s`, `serialization_s`, `framing_overhead_s`, `dsp_group_delay_s`, `fec_block_s`, `hardware_pipeline_s`, `queueing_s`, `processing_s`, `total_s`)
+- `summary.latency_metadata`: assumptions, inputs, defaults, and schema version for the latency budget (includes deterministic propagation spread percentiles when env effects are enabled). Backward-compat defaults are recorded in `defaults_used`.
 - `error`: structured error info for failed runs
 - `provenance`: versions/hashes/seed/runtime/backend/model
 - `warnings`: non-fatal issues (e.g., equalizer non-convergence)
