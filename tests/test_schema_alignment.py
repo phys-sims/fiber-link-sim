@@ -24,11 +24,11 @@ def _normalize_schema(schema: dict) -> dict:
 
 def test_simulation_spec_schema_alignment() -> None:
     expected = _normalize_schema(get_simulation_spec_schema())
-    actual = _normalize_schema(_load_schema(SCHEMA_DIR / "simulation_spec.schema.v0.2.json"))
+    actual = _normalize_schema(_load_schema(SCHEMA_DIR / "simulation_spec.schema.v0.3.json"))
     assert expected == actual
 
 
 def test_simulation_result_schema_alignment() -> None:
     expected = _normalize_schema(get_simulation_result_schema())
-    actual = _normalize_schema(_load_schema(SCHEMA_DIR / "simulation_result.schema.v0.2.json"))
+    actual = _normalize_schema(_load_schema(SCHEMA_DIR / "simulation_result.schema.v0.3.json"))
     assert expected == actual

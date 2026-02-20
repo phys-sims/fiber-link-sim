@@ -246,6 +246,45 @@ class LatencyModel(BaseModel):
     serialization_weight: float = Field(..., ge=0)
     processing_weight: float = Field(..., ge=0)
     processing_floor_s: float = Field(..., ge=0)
+    queueing: QueueingModel = Field(default_factory=lambda: QueueingModel())
+    framing: FramingOverheadModel = Field(default_factory=lambda: FramingOverheadModel())
+    hardware_pipeline: HardwarePipelineModel = Field(
+        default_factory=lambda: HardwarePipelineModel()
+    )
+
+
+class QueueingModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    ingress_buffer_s: float = Field(0.0, ge=0)
+    egress_buffer_s: float = Field(0.0, ge=0)
+    scheduler_tick_s: float = Field(0.0, ge=0)
+
+
+FramingFecOverheadMode = Literal["none", "auto_from_code_rate", "fixed_ratio"]
+
+
+class FramingOverheadModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    include_preamble_bits: bool = False
+    include_pilot_bits: bool = False
+    fec_overhead_mode: FramingFecOverheadMode = "none"
+    fec_overhead_ratio: float | None = Field(None, ge=0)
+
+    @model_validator(mode="after")
+    def _check_fec_overhead(self) -> FramingOverheadModel:
+        if self.fec_overhead_mode == "fixed_ratio" and self.fec_overhead_ratio is None:
+            raise ValueError("framing.fec_overhead_ratio is required when mode is 'fixed_ratio'")
+        if self.fec_overhead_mode != "fixed_ratio" and self.fec_overhead_ratio is not None:
+            raise ValueError("framing.fec_overhead_ratio is only valid when mode is 'fixed_ratio'")
+        return self
+
+
+class HardwarePipelineModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tx_fixed_s: float = Field(0.0, ge=0)
+    rx_fixed_s: float = Field(0.0, ge=0)
+    dsp_fixed_s: float = Field(0.0, ge=0)
+    fec_fixed_s: float = Field(0.0, ge=0)
 
 
 ArtifactLevel = Literal["none", "basic", "debug"]
@@ -310,8 +349,10 @@ class LatencyBudget(BaseModel):
     model_config = ConfigDict(extra="forbid")
     propagation_s: float = Field(..., ge=0)
     serialization_s: float = Field(..., ge=0)
+    framing_overhead_s: float = Field(..., ge=0)
     dsp_group_delay_s: float = Field(..., ge=0)
     fec_block_s: float = Field(..., ge=0)
+    hardware_pipeline_s: float = Field(..., ge=0)
     queueing_s: float = Field(..., ge=0)
     processing_s: float = Field(..., ge=0)
     total_s: float = Field(..., ge=0)

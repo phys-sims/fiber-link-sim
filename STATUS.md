@@ -3,9 +3,9 @@
 > **Source of truth:** Update this file whenever behavior, tests, or schemas change.
 
 ## Last updated
-- Date: 2026-02-13
+- Date: 2026-02-20
 - By: @openai-codex
-- Scope: Refreshed CI gate outcomes and test-suite runtime measurements with current local run data.
+- Scope: Versioned latency model to explicit queueing/framing/hardware terms, added analytic tests, and refreshed schema/docs references.
 
 ---
 
@@ -33,8 +33,8 @@
 ## Contract status (spec/result)
 
 ### Schema versions
-- SimulationSpec schema: `simulation_spec.schema.v0.2.json`
-- SimulationResult schema: `simulation_result.schema.v0.2.json`
+- SimulationSpec schema: `simulation_spec.schema.v0.3.json`
+- SimulationResult schema: `simulation_result.schema.v0.3.json`
 
 ### Example specs (contract validation + runtime)
 

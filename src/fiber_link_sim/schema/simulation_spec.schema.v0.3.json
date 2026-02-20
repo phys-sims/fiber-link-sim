@@ -1,0 +1,911 @@
+{
+  "$defs": {
+    "ADC": {
+      "additionalProperties": false,
+      "properties": {
+        "sample_rate_hz": {
+          "exclusiveMinimum": 0,
+          "title": "Sample Rate Hz",
+          "type": "number"
+        },
+        "bits": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Bits",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sample_rate_hz",
+        "bits"
+      ],
+      "title": "ADC",
+      "type": "object"
+    },
+    "Amplifier": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "none",
+            "edfa"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "none",
+            "auto_gain",
+            "fixed_gain"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "noise_figure_db": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Noise Figure Db"
+        },
+        "max_gain_db": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Gain Db"
+        },
+        "fixed_gain_db": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fixed Gain Db"
+        }
+      },
+      "required": [
+        "type",
+        "mode"
+      ],
+      "title": "Amplifier",
+      "type": "object"
+    },
+    "Autotune": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "budget_trials": {
+          "default": 30,
+          "minimum": 1,
+          "title": "Budget Trials",
+          "type": "integer"
+        },
+        "targets": {
+          "items": {
+            "const": "max_net_after_fec",
+            "type": "string"
+          },
+          "title": "Targets",
+          "type": "array"
+        }
+      },
+      "title": "Autotune",
+      "type": "object"
+    },
+    "DspBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "enum": [
+            "resample",
+            "matched_filter",
+            "cd_comp",
+            "mimo_eq",
+            "ffe",
+            "cpr",
+            "demap"
+          ],
+          "title": "Name",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "DspBlock",
+      "type": "object"
+    },
+    "Effects": {
+      "additionalProperties": false,
+      "properties": {
+        "dispersion": {
+          "default": true,
+          "title": "Dispersion",
+          "type": "boolean"
+        },
+        "nonlinearity": {
+          "default": true,
+          "title": "Nonlinearity",
+          "type": "boolean"
+        },
+        "ase": {
+          "default": true,
+          "title": "Ase",
+          "type": "boolean"
+        },
+        "pmd": {
+          "default": false,
+          "title": "Pmd",
+          "type": "boolean"
+        },
+        "env_effects": {
+          "default": false,
+          "title": "Env Effects",
+          "type": "boolean"
+        }
+      },
+      "title": "Effects",
+      "type": "object"
+    },
+    "Fec": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "scheme": {
+          "default": "ldpc",
+          "enum": [
+            "none",
+            "ldpc"
+          ],
+          "title": "Scheme",
+          "type": "string"
+        },
+        "code_rate": {
+          "default": 0.8,
+          "maximum": 1.0,
+          "minimum": 0.1,
+          "title": "Code Rate",
+          "type": "number"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        }
+      },
+      "title": "Fec",
+      "type": "object"
+    },
+    "Fiber": {
+      "additionalProperties": false,
+      "properties": {
+        "alpha_db_per_km": {
+          "minimum": 0,
+          "title": "Alpha Db Per Km",
+          "type": "number"
+        },
+        "beta2_s2_per_m": {
+          "title": "Beta2 S2 Per M",
+          "type": "number"
+        },
+        "beta3_s3_per_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Beta3 S3 Per M"
+        },
+        "gamma_w_inv_m": {
+          "minimum": 0,
+          "title": "Gamma W Inv M",
+          "type": "number"
+        },
+        "pmd_ps_sqrt_km": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Pmd Ps Sqrt Km",
+          "type": "number"
+        },
+        "n_group": {
+          "exclusiveMinimum": 1.0,
+          "title": "N Group",
+          "type": "number"
+        }
+      },
+      "required": [
+        "alpha_db_per_km",
+        "beta2_s2_per_m",
+        "gamma_w_inv_m",
+        "n_group"
+      ],
+      "title": "Fiber",
+      "type": "object"
+    },
+    "Frame": {
+      "additionalProperties": false,
+      "properties": {
+        "payload_bits": {
+          "minimum": 1,
+          "title": "Payload Bits",
+          "type": "integer"
+        },
+        "preamble_bits": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Preamble Bits",
+          "type": "integer"
+        },
+        "pilot_bits": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Pilot Bits",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "payload_bits"
+      ],
+      "title": "Frame",
+      "type": "object"
+    },
+    "FramingOverheadModel": {
+      "additionalProperties": false,
+      "properties": {
+        "include_preamble_bits": {
+          "default": false,
+          "title": "Include Preamble Bits",
+          "type": "boolean"
+        },
+        "include_pilot_bits": {
+          "default": false,
+          "title": "Include Pilot Bits",
+          "type": "boolean"
+        },
+        "fec_overhead_mode": {
+          "default": "none",
+          "enum": [
+            "none",
+            "auto_from_code_rate",
+            "fixed_ratio"
+          ],
+          "title": "Fec Overhead Mode",
+          "type": "string"
+        },
+        "fec_overhead_ratio": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fec Overhead Ratio"
+        }
+      },
+      "title": "FramingOverheadModel",
+      "type": "object"
+    },
+    "Geo": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "polyline_wgs84": {
+          "description": "Optional [lon, lat] points.",
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Polyline Wgs84",
+          "type": "array"
+        }
+      },
+      "title": "Geo",
+      "type": "object"
+    },
+    "HardwarePipelineModel": {
+      "additionalProperties": false,
+      "properties": {
+        "tx_fixed_s": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Tx Fixed S",
+          "type": "number"
+        },
+        "rx_fixed_s": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Rx Fixed S",
+          "type": "number"
+        },
+        "dsp_fixed_s": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Dsp Fixed S",
+          "type": "number"
+        },
+        "fec_fixed_s": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Fec Fixed S",
+          "type": "number"
+        }
+      },
+      "title": "HardwarePipelineModel",
+      "type": "object"
+    },
+    "LatencyModel": {
+      "additionalProperties": false,
+      "properties": {
+        "serialization_weight": {
+          "minimum": 0,
+          "title": "Serialization Weight",
+          "type": "number"
+        },
+        "processing_weight": {
+          "minimum": 0,
+          "title": "Processing Weight",
+          "type": "number"
+        },
+        "processing_floor_s": {
+          "minimum": 0,
+          "title": "Processing Floor S",
+          "type": "number"
+        },
+        "queueing": {
+          "$ref": "#/$defs/QueueingModel"
+        },
+        "framing": {
+          "$ref": "#/$defs/FramingOverheadModel"
+        },
+        "hardware_pipeline": {
+          "$ref": "#/$defs/HardwarePipelineModel"
+        }
+      },
+      "required": [
+        "serialization_weight",
+        "processing_weight",
+        "processing_floor_s"
+      ],
+      "title": "LatencyModel",
+      "type": "object"
+    },
+    "Outputs": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_level": {
+          "default": "basic",
+          "enum": [
+            "none",
+            "basic",
+            "debug"
+          ],
+          "title": "Artifact Level",
+          "type": "string"
+        },
+        "return_waveforms": {
+          "default": false,
+          "title": "Return Waveforms",
+          "type": "boolean"
+        }
+      },
+      "title": "Outputs",
+      "type": "object"
+    },
+    "Path": {
+      "additionalProperties": false,
+      "properties": {
+        "segments": {
+          "items": {
+            "$ref": "#/$defs/PathSegment"
+          },
+          "title": "Segments",
+          "type": "array"
+        },
+        "geo": {
+          "$ref": "#/$defs/Geo"
+        }
+      },
+      "required": [
+        "segments"
+      ],
+      "title": "Path",
+      "type": "object"
+    },
+    "PathSegment": {
+      "additionalProperties": false,
+      "properties": {
+        "length_m": {
+          "exclusiveMinimum": 0,
+          "title": "Length M",
+          "type": "number"
+        },
+        "temp_c": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Temp C"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "required": [
+        "length_m"
+      ],
+      "title": "PathSegment",
+      "type": "object"
+    },
+    "Processing": {
+      "additionalProperties": false,
+      "properties": {
+        "autotune": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Autotune"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "dsp_chain": {
+          "items": {
+            "$ref": "#/$defs/DspBlock"
+          },
+          "title": "Dsp Chain",
+          "type": "array"
+        },
+        "fec": {
+          "$ref": "#/$defs/Fec"
+        }
+      },
+      "required": [
+        "fec"
+      ],
+      "title": "Processing",
+      "type": "object"
+    },
+    "Propagation": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "enum": [
+            "scalar_glnse",
+            "manakov"
+          ],
+          "title": "Model",
+          "type": "string"
+        },
+        "backend": {
+          "const": "builtin_ssfm",
+          "default": "builtin_ssfm",
+          "title": "Backend",
+          "type": "string"
+        },
+        "effects": {
+          "$ref": "#/$defs/Effects"
+        },
+        "ssfm": {
+          "$ref": "#/$defs/SSFM"
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "title": "Propagation",
+      "type": "object"
+    },
+    "QueueingModel": {
+      "additionalProperties": false,
+      "properties": {
+        "ingress_buffer_s": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Ingress Buffer S",
+          "type": "number"
+        },
+        "egress_buffer_s": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Egress Buffer S",
+          "type": "number"
+        },
+        "scheduler_tick_s": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Scheduler Tick S",
+          "type": "number"
+        }
+      },
+      "title": "QueueingModel",
+      "type": "object"
+    },
+    "Runtime": {
+      "additionalProperties": false,
+      "properties": {
+        "seed": {
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "n_symbols": {
+          "minimum": 128,
+          "title": "N Symbols",
+          "type": "integer"
+        },
+        "samples_per_symbol": {
+          "maximum": 64,
+          "minimum": 1,
+          "title": "Samples Per Symbol",
+          "type": "integer"
+        },
+        "max_runtime_s": {
+          "exclusiveMinimum": 0,
+          "title": "Max Runtime S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "seed",
+        "n_symbols",
+        "samples_per_symbol",
+        "max_runtime_s"
+      ],
+      "title": "Runtime",
+      "type": "object"
+    },
+    "Rx": {
+      "additionalProperties": false,
+      "properties": {
+        "coherent": {
+          "title": "Coherent",
+          "type": "boolean"
+        },
+        "lo_linewidth_hz": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Lo Linewidth Hz",
+          "type": "number"
+        },
+        "adc": {
+          "$ref": "#/$defs/ADC"
+        },
+        "noise": {
+          "$ref": "#/$defs/RxNoise"
+        }
+      },
+      "required": [
+        "coherent",
+        "adc"
+      ],
+      "title": "Rx",
+      "type": "object"
+    },
+    "RxNoise": {
+      "additionalProperties": false,
+      "properties": {
+        "thermal": {
+          "default": true,
+          "title": "Thermal",
+          "type": "boolean"
+        },
+        "shot": {
+          "default": true,
+          "title": "Shot",
+          "type": "boolean"
+        }
+      },
+      "title": "RxNoise",
+      "type": "object"
+    },
+    "SSFM": {
+      "additionalProperties": false,
+      "properties": {
+        "dz_m": {
+          "default": 100.0,
+          "exclusiveMinimum": 0,
+          "title": "Dz M",
+          "type": "number"
+        },
+        "step_adapt": {
+          "default": false,
+          "title": "Step Adapt",
+          "type": "boolean"
+        }
+      },
+      "title": "SSFM",
+      "type": "object"
+    },
+    "Scenario": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "title": "Scenario",
+      "type": "object"
+    },
+    "Signal": {
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "coherent_qpsk",
+            "imdd_ook",
+            "imdd_pam4"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "symbol_rate_baud": {
+          "exclusiveMinimum": 0,
+          "title": "Symbol Rate Baud",
+          "type": "number"
+        },
+        "rolloff": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Rolloff",
+          "type": "number"
+        },
+        "n_pol": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "N Pol",
+          "type": "integer"
+        },
+        "frame": {
+          "$ref": "#/$defs/Frame"
+        }
+      },
+      "required": [
+        "format",
+        "symbol_rate_baud",
+        "rolloff",
+        "n_pol",
+        "frame"
+      ],
+      "title": "Signal",
+      "type": "object"
+    },
+    "Spans": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "from_path_segments",
+            "fixed_span_length"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "span_length_m": {
+          "exclusiveMinimum": 0,
+          "title": "Span Length M",
+          "type": "number"
+        },
+        "amplifier": {
+          "$ref": "#/$defs/Amplifier"
+        }
+      },
+      "required": [
+        "mode",
+        "span_length_m",
+        "amplifier"
+      ],
+      "title": "Spans",
+      "type": "object"
+    },
+    "Transceiver": {
+      "additionalProperties": false,
+      "properties": {
+        "tx": {
+          "$ref": "#/$defs/Tx"
+        },
+        "rx": {
+          "$ref": "#/$defs/Rx"
+        }
+      },
+      "required": [
+        "tx",
+        "rx"
+      ],
+      "title": "Transceiver",
+      "type": "object"
+    },
+    "Tx": {
+      "additionalProperties": false,
+      "properties": {
+        "laser_linewidth_hz": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Laser Linewidth Hz",
+          "type": "number"
+        },
+        "launch_power_dbm": {
+          "title": "Launch Power Dbm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "launch_power_dbm"
+      ],
+      "title": "Tx",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "v": {
+      "minLength": 1,
+      "title": "V",
+      "type": "string"
+    },
+    "scenario": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Scenario"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "path": {
+      "$ref": "#/$defs/Path"
+    },
+    "fiber": {
+      "$ref": "#/$defs/Fiber"
+    },
+    "spans": {
+      "$ref": "#/$defs/Spans"
+    },
+    "signal": {
+      "$ref": "#/$defs/Signal"
+    },
+    "transceiver": {
+      "$ref": "#/$defs/Transceiver"
+    },
+    "processing": {
+      "$ref": "#/$defs/Processing"
+    },
+    "propagation": {
+      "$ref": "#/$defs/Propagation"
+    },
+    "latency_model": {
+      "$ref": "#/$defs/LatencyModel"
+    },
+    "runtime": {
+      "$ref": "#/$defs/Runtime"
+    },
+    "outputs": {
+      "$ref": "#/$defs/Outputs"
+    }
+  },
+  "required": [
+    "v",
+    "path",
+    "fiber",
+    "spans",
+    "signal",
+    "transceiver",
+    "processing",
+    "propagation",
+    "latency_model",
+    "runtime",
+    "outputs"
+  ],
+  "title": "SimulationSpec",
+  "type": "object",
+  "$id": "fiber-physics.simulation-spec.schema.v0.3"
+}

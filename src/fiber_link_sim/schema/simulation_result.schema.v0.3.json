@@ -1,0 +1,441 @@
+{
+  "$defs": {
+    "Artifact": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "png",
+            "npz",
+            "json",
+            "txt",
+            "bin"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "ref": {
+          "title": "Ref",
+          "type": "string"
+        },
+        "mime": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mime"
+        },
+        "bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bytes"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "ref"
+      ],
+      "title": "Artifact",
+      "type": "object"
+    },
+    "ErrorInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "enum": [
+            "validation_error",
+            "runtime_error",
+            "timeout",
+            "not_implemented"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "details": {
+          "additionalProperties": true,
+          "title": "Details",
+          "type": "object"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ErrorInfo",
+      "type": "object"
+    },
+    "Errors": {
+      "additionalProperties": false,
+      "properties": {
+        "pre_fec_ber": {
+          "minimum": 0,
+          "title": "Pre Fec Ber",
+          "type": "number"
+        },
+        "post_fec_ber": {
+          "minimum": 0,
+          "title": "Post Fec Ber",
+          "type": "number"
+        },
+        "fer": {
+          "minimum": 0,
+          "title": "Fer",
+          "type": "number"
+        }
+      },
+      "required": [
+        "pre_fec_ber",
+        "post_fec_ber",
+        "fer"
+      ],
+      "title": "Errors",
+      "type": "object"
+    },
+    "LatencyBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "propagation_s": {
+          "minimum": 0,
+          "title": "Propagation S",
+          "type": "number"
+        },
+        "serialization_s": {
+          "minimum": 0,
+          "title": "Serialization S",
+          "type": "number"
+        },
+        "framing_overhead_s": {
+          "minimum": 0,
+          "title": "Framing Overhead S",
+          "type": "number"
+        },
+        "dsp_group_delay_s": {
+          "minimum": 0,
+          "title": "Dsp Group Delay S",
+          "type": "number"
+        },
+        "fec_block_s": {
+          "minimum": 0,
+          "title": "Fec Block S",
+          "type": "number"
+        },
+        "hardware_pipeline_s": {
+          "minimum": 0,
+          "title": "Hardware Pipeline S",
+          "type": "number"
+        },
+        "queueing_s": {
+          "minimum": 0,
+          "title": "Queueing S",
+          "type": "number"
+        },
+        "processing_s": {
+          "minimum": 0,
+          "title": "Processing S",
+          "type": "number"
+        },
+        "total_s": {
+          "minimum": 0,
+          "title": "Total S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "propagation_s",
+        "serialization_s",
+        "framing_overhead_s",
+        "dsp_group_delay_s",
+        "fec_block_s",
+        "hardware_pipeline_s",
+        "queueing_s",
+        "processing_s",
+        "total_s"
+      ],
+      "title": "LatencyBudget",
+      "type": "object"
+    },
+    "LatencyMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "assumptions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "inputs_used": {
+          "additionalProperties": true,
+          "title": "Inputs Used",
+          "type": "object"
+        },
+        "defaults_used": {
+          "additionalProperties": true,
+          "title": "Defaults Used",
+          "type": "object"
+        },
+        "schema_version": {
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version"
+      ],
+      "title": "LatencyMetadata",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "sim_version": {
+          "title": "Sim Version",
+          "type": "string"
+        },
+        "spec_hash": {
+          "title": "Spec Hash",
+          "type": "string"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "runtime_s": {
+          "minimum": 0,
+          "title": "Runtime S",
+          "type": "number"
+        },
+        "backend": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Backend"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        }
+      },
+      "required": [
+        "sim_version",
+        "spec_hash",
+        "seed",
+        "runtime_s"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Summary": {
+      "additionalProperties": false,
+      "properties": {
+        "latency_s": {
+          "$ref": "#/$defs/LatencyBudget"
+        },
+        "latency_metadata": {
+          "$ref": "#/$defs/LatencyMetadata"
+        },
+        "throughput_bps": {
+          "$ref": "#/$defs/Throughput"
+        },
+        "errors": {
+          "$ref": "#/$defs/Errors"
+        },
+        "osnr_db": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Osnr Db"
+        },
+        "snr_db": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Snr Db"
+        },
+        "evm_rms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evm Rms"
+        },
+        "q_factor_db": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Q Factor Db"
+        }
+      },
+      "required": [
+        "latency_s",
+        "latency_metadata",
+        "throughput_bps",
+        "errors"
+      ],
+      "title": "Summary",
+      "type": "object"
+    },
+    "Throughput": {
+      "additionalProperties": false,
+      "properties": {
+        "raw_line_rate": {
+          "minimum": 0,
+          "title": "Raw Line Rate",
+          "type": "number"
+        },
+        "net_after_fec": {
+          "minimum": 0,
+          "title": "Net After Fec",
+          "type": "number"
+        },
+        "goodput_est": {
+          "minimum": 0,
+          "title": "Goodput Est",
+          "type": "number"
+        }
+      },
+      "required": [
+        "raw_line_rate",
+        "net_after_fec",
+        "goodput_est"
+      ],
+      "title": "Throughput",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "v": {
+      "minLength": 1,
+      "title": "V",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "success",
+        "error"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Summary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "error": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ErrorInfo"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "artifacts": {
+      "items": {
+        "$ref": "#/$defs/Artifact"
+      },
+      "title": "Artifacts",
+      "type": "array"
+    },
+    "best_found_spec_patch": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Best Found Spec Patch"
+    }
+  },
+  "required": [
+    "v",
+    "status",
+    "provenance"
+  ],
+  "title": "SimulationResult",
+  "type": "object",
+  "$id": "fiber-physics.simulation-result.schema.v0.3"
+}
