@@ -91,7 +91,7 @@ How fiber propagation is simulated.
 - `backend`: backend identifier (v0.2 supports builtin_ssfm only)
 - `effects`: toggles (dispersion, nonlinearity, ase, pmd, env_effects)
   - **Implementation:** dispersion → OptiCommPy `D`, nonlinearity → `gamma`, ASE → EDFA vs ideal amp; PMD wired into adapter parameters.
-  - `env_effects=true` enables a temperature-adjusted propagation latency calculation based on `path.segments[].temp_c`.
+  - `env_effects=true` enables a temperature-adjusted propagation latency calculation based on `path.segments[].temp_c` and `latency_model.environment`.
 - `ssfm`: numerical step size controls (dz_m, step_adapt)
 
 ### `latency_model`
@@ -105,6 +105,15 @@ Controls how latency is broken down in the Metrics stage.
   - `fec_overhead_ratio`: required for `fixed_ratio`.
 - `queueing`: explicit buffering assumptions (`ingress_buffer_s + egress_buffer_s + scheduler_tick_s`).
 - `hardware_pipeline`: fixed hardware delays (`tx_fixed_s + rx_fixed_s + dsp_fixed_s + fec_fixed_s`).
+
+- `environment` (versioned environmental assumptions for latency; defaults are deterministic and backward compatible):
+  - `version`: currently `v1`.
+  - `temperature_reference_c` (safe range `[-60, 120]`): baseline temperature used when a segment omits `temp_c`.
+  - `group_delay_temp_coeff_per_c` (safe range `[0, 1e-3]`): linear coefficient mapping temperature deltas to group-delay/index perturbation.
+  - `spread` controls deterministic Monte-Carlo spread estimation reported in `summary.latency_metadata.inputs_used.propagation_spread_s`:
+    - `sigma_c` (safe range `[0, 20]`): Gaussian temperature spread (°C).
+    - `samples` (safe range `[16, 50000]`): number of spread samples.
+    - `sampling_policy`: currently `normal_mc`.
 
 Latency formulas (seconds):
 - `serialization_s = payload_bits / (symbol_rate_baud * bits_per_symbol) * serialization_weight`

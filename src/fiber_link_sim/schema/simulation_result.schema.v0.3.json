@@ -436,6 +436,5 @@
     "provenance"
   ],
   "title": "SimulationResult",
-  "type": "object",
-  "$id": "fiber-physics.simulation-result.schema.v0.3"
+  "type": "object"
 }
