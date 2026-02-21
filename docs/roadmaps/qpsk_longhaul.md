@@ -222,23 +222,22 @@ waveforms or dense per-sample traces unless explicitly requested by `outputs.ret
   `SimulationSpec` sections to stage configs.
 - This roadmap maps those conceptual stages to **schema fields** to ensure each block has explicit inputs.
 
-### Gaps / to-be-clarified items
+### Resolved contract decisions (vNext)
 
 1. **DAC/driver modeling (TX) and photodiode/analog front-end modeling (RX)**
-   - Mentioned conceptually in [physics_context](../refs/physics_context.md), but **no explicit spec fields** exist for
-     DAC resolution, modulator characteristics, photodiode responsivity, or TIA/analog filters.
+   - **Explicitly out-of-scope for v1 demo.**
+   - v1 assumption is recorded in `summary.latency_metadata.assumptions`: ADC quantization + existing photodiode defaults are the interim front-end approximation.
 2. **Timing recovery / synchronization configuration (DSP)**
-   - DSP chain is configurable via `processing.dsp_chain`, but there are **no explicit, named schema fields** for
-     timing recovery or pilot-assisted synchronization (left to `params`).
+   - **Implemented in vNext schema.**
+   - Added `processing.synchronization` with explicit fields: `timing_recovery`, `pilot_assisted`, `pilot_update_interval_symbols`, `phase_search_enabled`.
 3. **Latency accounting configuration (Metrics)**
-   - Latency breakdown is described in [physics_context](../refs/physics_context.md), yet the schema has **no explicit
-     latency model parameters** (e.g., serialization vs processing latency weights).
+   - **Implemented in vNext schema.**
+   - Added `latency_model.include_queueing_in_total` and `latency_model.include_processing_in_total` so aggregation policy is explicit.
 4. **Environmental effects (Channel)**
-   - `propagation.effects.env_effects` is a toggle, but **no spec fields define environment parameters** (temperature
-     gradients, vibration), aside from optional `path.segments[].temp_c`.
-5. **Artifact definitions (Metrics)**
-   - `outputs.artifact_level` and `outputs.return_waveforms` toggle artifacts, but **specific artifact types** (e.g.,
-     constellation plots, eye diagrams) are not enumerated in the schema.
+   - **Implemented in vNext schema.**
+   - Added `propagation.environment.temperature_ref_c`, `temperature_sigma_c`, and `vibration_sigma_ps`.
+5. **Artifact definitions (Metrics/Artifacts)**
+   - **Implemented in vNext schema.**
+   - Added `outputs.artifacts` enum list to explicitly select artifact families (`constellation`, `phase_error_trace`, `eye_diagram`, `psd`, etc.).
 
-These gaps should be resolved either by (a) introducing additional spec fields in a **versioned schema update**, or
-(b) documenting the implied defaults and parameter usage inside stage `params` definitions with validation and tests.
+All roadmap contract gaps are now explicitly resolved as implemented schema decisions or v1 scope assumptions.

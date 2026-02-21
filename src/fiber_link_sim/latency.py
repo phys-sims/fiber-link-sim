@@ -10,16 +10,18 @@ from fiber_link_sim.data_models.stage_models import DspSpecSlice, MetricsSpecSli
 from fiber_link_sim.utils import bits_per_symbol, total_link_length_m
 
 _C_M_S = 299_792_458.0
-_TEMP_REF_C = 20.0
 _GROUP_DELAY_TEMP_COEFF_PER_C = 7e-6
-_TEMP_SPREAD_SIGMA_C = 1.0
 _TEMP_SPREAD_SAMPLES = 512
 
 
 def compute_latency_budget(
     spec: MetricsSpecSlice, stats: dict[str, Any]
 ) -> tuple[dict[str, float], dict[str, Any]]:
-    assumptions: list[str] = []
+    assumptions: list[str] = [
+        "TX DAC/driver and RX photodiode/TIA analog-front-end models are out-of-scope "
+        "for v1 demo; ADC quantization and photodiode defaults approximate "
+        "front-end behavior.",
+    ]
     defaults_used: dict[str, Any] = {}
     inputs_used: dict[str, Any] = {}
 
@@ -89,6 +91,17 @@ def compute_latency_budget(
     inputs_used.update(hw_inputs)
     assumptions.extend(hw_assumptions)
 
+    queueing_term_s = queueing_s if spec.latency_model.include_queueing_in_total else 0.0
+    processing_term_s = processing_s if spec.latency_model.include_processing_in_total else 0.0
+    if not spec.latency_model.include_queueing_in_total:
+        assumptions.append(
+            "queueing_s excluded from total_s by latency_model.include_queueing_in_total=false."
+        )
+    if not spec.latency_model.include_processing_in_total:
+        assumptions.append(
+            "processing_s excluded from total_s by latency_model.include_processing_in_total=false."
+        )
+
     total_s = (
         propagation_s
         + serialization_s
@@ -96,8 +109,8 @@ def compute_latency_budget(
         + dsp_group_delay_s
         + fec_block_s
         + hardware_pipeline_s
-        + queueing_s
-        + processing_s
+        + queueing_term_s
+        + processing_term_s
     )
 
     budget = {
@@ -222,6 +235,17 @@ def _propagation_latency(
     defaults_used: dict[str, Any] = {}
     assumptions: list[str] = []
 
+    env = spec.propagation.environment
+    env_fields = env.model_fields_set
+    temperature_ref_c = float(env.temperature_ref_c)
+    inputs_used["environment.temperature_ref_c"] = temperature_ref_c
+    if "temperature_ref_c" not in env_fields:
+        defaults_used["temperature_reference_c"] = temperature_ref_c
+    if "temperature_sigma_c" not in env_fields:
+        defaults_used["environment.temperature_sigma_c"] = float(env.temperature_sigma_c)
+    if "vibration_sigma_ps" not in env_fields:
+        defaults_used["environment.vibration_sigma_ps"] = float(env.vibration_sigma_ps)
+
     if not spec.propagation.effects.env_effects:
         assumptions.append(
             "Propagation latency uses constant fiber.n_group (env_effects disabled)."
@@ -233,7 +257,6 @@ def _propagation_latency(
             assumptions,
         )
 
-    defaults_used["temperature_reference_c"] = _TEMP_REF_C
     defaults_used["group_delay_temp_coeff_per_c"] = _GROUP_DELAY_TEMP_COEFF_PER_C
     assumptions.append(
         "Temperature-aware propagation uses per-segment temp_c and "
@@ -242,9 +265,9 @@ def _propagation_latency(
 
     delay_s = 0.0
     for segment in spec.path.segments:
-        segment_temp_c = _TEMP_REF_C if segment.temp_c is None else segment.temp_c
+        segment_temp_c = temperature_ref_c if segment.temp_c is None else segment.temp_c
         n_eff = spec.fiber.n_group * (
-            1.0 + _GROUP_DELAY_TEMP_COEFF_PER_C * (segment_temp_c - _TEMP_REF_C)
+            1.0 + _GROUP_DELAY_TEMP_COEFF_PER_C * (segment_temp_c - temperature_ref_c)
         )
         delay_s += segment.length_m * n_eff / _C_M_S
 
@@ -259,9 +282,11 @@ def _propagation_spread_estimate(spec: MetricsSpecSlice) -> dict[str, float] | N
         return None
 
     rng = np.random.default_rng(spec.runtime.seed + 17)
+    temperature_ref_c = float(spec.propagation.environment.temperature_ref_c)
+    temperature_sigma_c = float(spec.propagation.environment.temperature_sigma_c)
     temps_c = np.array(
         [
-            _TEMP_REF_C if segment.temp_c is None else float(segment.temp_c)
+            temperature_ref_c if segment.temp_c is None else float(segment.temp_c)
             for segment in spec.path.segments
         ],
         dtype=float,
@@ -270,11 +295,11 @@ def _propagation_spread_estimate(spec: MetricsSpecSlice) -> dict[str, float] | N
 
     jittered_temps = rng.normal(
         loc=temps_c,
-        scale=_TEMP_SPREAD_SIGMA_C,
+        scale=temperature_sigma_c,
         size=(_TEMP_SPREAD_SAMPLES, len(spec.path.segments)),
     )
     n_eff = spec.fiber.n_group * (
-        1.0 + _GROUP_DELAY_TEMP_COEFF_PER_C * (jittered_temps - _TEMP_REF_C)
+        1.0 + _GROUP_DELAY_TEMP_COEFF_PER_C * (jittered_temps - temperature_ref_c)
     )
     delays_s = (lengths_m * n_eff / _C_M_S).sum(axis=1)
     return {
