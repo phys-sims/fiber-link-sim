@@ -5,7 +5,7 @@
 ## Last updated
 - Date: 2026-02-20
 - By: @openai-codex
-- Scope: Versioned latency model to explicit queueing/framing/hardware terms, added analytic tests, and refreshed schema/docs references.
+- Scope: Resolved QPSK roadmap contract gaps with vNext schema decisions, latency assumptions, decision-locking tests, and ADR updates.
 
 ---
 
@@ -13,9 +13,9 @@
 
 | Check | Command | Status | Last run | Notes |
 | --- | --- | --- | --- | --- |
-| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-13 | Warning about deprecated `default_stages` names (migration pending in `.pre-commit-config.yaml`). |
-| Type checking (mypy) | `python -m mypy src` | ✅ | 2026-02-13 | Success: no issues found in 26 source files. |
-| Pytest fast (required gate) | `python -m pytest -q -m "not slow" --durations=10 --cov=fiber_link_sim --cov-report=term-missing:skip-covered` | ✅ | 2026-02-13 | 37 passed, 12 deselected, 1 warning; completed in 123.80s test time. |
+| Pre-commit (lint/format) | `python -m pre_commit run -a` | ✅ | 2026-02-20 | Warning about deprecated `default_stages` names (migration pending in `.pre-commit-config.yaml`). |
+| Type checking (mypy) | `python -m mypy src` | ✅ | 2026-02-20 | Success: no issues found in 26 source files. |
+| Pytest fast (required gate) | `python -m pytest -q -m "not slow" --durations=10` | ✅ | 2026-02-20 | 44 passed, 12 deselected, 1 warning; completed in 124.45s. |
 | Pytest slow (supplemental) | `python -m pytest -q -m slow --durations=10` | ✅ | 2026-02-13 | 12 passed, 37 deselected, 13 warnings; completed in 380.24s test time. |
 
 ---

@@ -73,6 +73,7 @@ class ChannelStage(Stage):
                 "total_length_m": total_length_m,
                 "n_spans": channel_out.n_spans,
                 "osnr_db": channel_out.osnr_db,
+                "environment": spec.propagation.environment.model_dump(),
             }
         )
         state.meta.setdefault("stage_timings", {})[self.name] = time.perf_counter() - start
@@ -121,6 +122,7 @@ class DSPStage(Stage):
             ref = state.store_blob("llrs", dsp_out.llrs, role="rx:llrs", units="llr")
             state.rx["llrs_ref"] = ref
         state.stats["dsp"] = dsp_out.params
+        state.stats["synchronization"] = spec.processing.synchronization.model_dump()
         state.meta.setdefault("stage_timings", {})[self.name] = time.perf_counter() - start
         return StageResult(state=state)
 
@@ -251,24 +253,28 @@ class ArtifactsStage(Stage):
         if not spec.outputs.return_waveforms:
             return StageResult(state=state)
 
+        selected_artifacts = set(spec.outputs.artifacts)
+        artifact_auto = "auto" in selected_artifacts
+
         waveforms: list[tuple[str, np.ndarray | None]] = [
             ("tx_waveform", state.load_signal("tx", "waveform")),
             ("optical_waveform", state.load_signal("optical", "waveform")),
             ("rx_samples", state.load_signal("rx", "samples")),
         ]
 
-        for name, waveform in waveforms:
-            if waveform is None:
-                continue
-            state.artifacts.append(
-                state.artifact_store.save_npz_artifact(
-                    ArtifactPayload(name=name, arrays={"data": np.asarray(waveform)})
+        if artifact_auto:
+            for name, waveform in waveforms:
+                if waveform is None:
+                    continue
+                state.artifacts.append(
+                    state.artifact_store.save_npz_artifact(
+                        ArtifactPayload(name=name, arrays={"data": np.asarray(waveform)})
+                    )
                 )
-            )
 
         fs_hz = spec.signal.symbol_rate_baud * spec.runtime.samples_per_symbol
         tx_waveform = state.load_signal("tx", "waveform")
-        if tx_waveform is not None:
+        if tx_waveform is not None and (artifact_auto or "psd" in selected_artifacts):
             freqs, psd_db = compute_psd(np.asarray(tx_waveform), fs_hz)
             if freqs.size:
                 state.artifacts.append(
@@ -278,7 +284,7 @@ class ArtifactsStage(Stage):
                 )
 
         optical_waveform = state.load_signal("optical", "waveform")
-        if optical_waveform is not None:
+        if optical_waveform is not None and (artifact_auto or "psd" in selected_artifacts):
             freqs, psd_db = compute_psd(np.asarray(optical_waveform), fs_hz)
             if freqs.size:
                 state.artifacts.append(
@@ -290,7 +296,7 @@ class ArtifactsStage(Stage):
                 )
 
         rx_samples = state.load_signal("rx", "samples")
-        if rx_samples is not None:
+        if rx_samples is not None and (artifact_auto or "eye_diagram" in selected_artifacts):
             traces = build_eye_traces(np.asarray(rx_samples), spec.runtime.samples_per_symbol)
             if traces.size:
                 state.artifacts.append(
@@ -300,7 +306,7 @@ class ArtifactsStage(Stage):
                 )
 
         dsp_samples = state.load_signal("rx", "dsp_samples")
-        if dsp_samples is not None:
+        if dsp_samples is not None and (artifact_auto or "eye_diagram" in selected_artifacts):
             traces = build_eye_traces(np.asarray(dsp_samples), spec.runtime.samples_per_symbol)
             if traces.size:
                 state.artifacts.append(
@@ -310,7 +316,7 @@ class ArtifactsStage(Stage):
                 )
 
         rx_symbols = state.load_signal("rx", "symbols")
-        if rx_symbols is not None:
+        if rx_symbols is not None and (artifact_auto or "constellation" in selected_artifacts):
             symbols = np.asarray(rx_symbols).reshape(-1)
             if symbols.size:
                 state.artifacts.append(
@@ -319,14 +325,15 @@ class ArtifactsStage(Stage):
                     )
                 )
 
-            tx_symbols = state.load_signal("tx", "symbols")
-            phase_error = compute_phase_error(symbols, tx_symbols)
-            if phase_error.size:
-                state.artifacts.append(
-                    state.artifact_store.save_npz_artifact(
-                        ArtifactPayload(name="dsp_phase_error", arrays={"radians": phase_error})
+            if artifact_auto or "phase_error_trace" in selected_artifacts:
+                tx_symbols = state.load_signal("tx", "symbols")
+                phase_error = compute_phase_error(symbols, tx_symbols)
+                if phase_error.size:
+                    state.artifacts.append(
+                        state.artifact_store.save_npz_artifact(
+                            ArtifactPayload(name="dsp_phase_error", arrays={"radians": phase_error})
+                        )
                     )
-                )
 
         if spec.outputs.artifact_level == "debug":
             tx_symbols = state.load_signal("tx", "symbols")

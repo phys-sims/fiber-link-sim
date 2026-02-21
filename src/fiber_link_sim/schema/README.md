@@ -80,6 +80,7 @@ Front-end assumptions:
 ### `processing`
 User-configurable DSP and FEC chain.
 - `dsp_chain`: ordered list of blocks with `enabled` and `params`.
+- `synchronization`: explicit timing/sync policy (`timing_recovery`, `pilot_assisted`, `pilot_update_interval_symbols`, `phase_search_enabled`).
 - `fec`: optional LDPC decode; if `enabled=false` then scheme is `none` and rate is 1.0. When LDPC is enabled,
   `fec.params` must include a parity-check matrix `H` plus decoder settings such as `max_iter` (or legacy
   `max_iters`) and `alg` (`"SPA"` or `"MSA"`).
@@ -92,6 +93,7 @@ How fiber propagation is simulated.
 - `effects`: toggles (dispersion, nonlinearity, ase, pmd, env_effects)
   - **Implementation:** dispersion → OptiCommPy `D`, nonlinearity → `gamma`, ASE → EDFA vs ideal amp; PMD wired into adapter parameters.
   - `env_effects=true` enables a temperature-adjusted propagation latency calculation based on `path.segments[].temp_c`.
+- `environment`: explicit environment defaults/variance for deterministic latency spread modeling (`temperature_ref_c`, `temperature_sigma_c`, `vibration_sigma_ps`).
 - `ssfm`: numerical step size controls (dz_m, step_adapt)
 
 ### `latency_model`
@@ -99,6 +101,7 @@ Controls how latency is broken down in the Metrics stage.
 - `serialization_weight`: multiplier on bit-serialization terms.
 - `processing_weight`: multiplier applied to `runtime.n_symbols / signal.symbol_rate_baud` to estimate processing time.
 - `processing_floor_s`: minimum processing latency applied even for tiny runs.
+- `include_queueing_in_total`, `include_processing_in_total`: explicit aggregation policy switches for `total_s`.
 - `framing`: explicit framing/overhead assumptions.
   - `include_preamble_bits`, `include_pilot_bits`: include those frame fields in a separate framing term.
   - `fec_overhead_mode`: `none`, `auto_from_code_rate`, or `fixed_ratio`.
@@ -123,6 +126,7 @@ Controls reproducibility and compute.
 Controls artifact emission.
 - `artifact_level`: none/basic/debug
 - `return_waveforms`: whether to emit waveform artifacts (still by reference)
+- `artifacts`: explicit artifact-family selection list (`auto`, `constellation`, `phase_error_trace`, `eye_diagram`, `psd`, `osnr_vs_span`, `evm_vs_distance`, `ber_waterfall`)
 
 ---
 

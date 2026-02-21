@@ -94,3 +94,29 @@ def test_preserve_numpy_random_state_restores() -> None:
     assert before[0] == after[0]
     assert np.array_equal(before[1], after[1])
     assert before[2:] == after[2:]
+
+
+def test_latency_metadata_records_v1_frontend_scope_assumption() -> None:
+    spec = json.loads((EXAMPLE_DIR / "ook_smoke.json").read_text())
+    result = simulate(spec)
+    assert result.summary is not None
+    assumptions = result.summary.latency_metadata.assumptions
+    assert any("out-of-scope for v1 demo" in item for item in assumptions)
+
+
+def test_latency_model_can_exclude_queueing_from_total() -> None:
+    spec = json.loads((EXAMPLE_DIR / "ook_smoke.json").read_text())
+    spec["latency_model"]["include_queueing_in_total"] = False
+    result = simulate(spec)
+    assert result.summary is not None
+    assumptions = result.summary.latency_metadata.assumptions
+    assert any("include_queueing_in_total=false" in item for item in assumptions)
+
+
+def test_latency_model_can_exclude_processing_from_total() -> None:
+    spec = json.loads((EXAMPLE_DIR / "ook_smoke.json").read_text())
+    spec["latency_model"]["include_processing_in_total"] = False
+    result = simulate(spec)
+    assert result.summary is not None
+    assumptions = result.summary.latency_metadata.assumptions
+    assert any("include_processing_in_total=false" in item for item in assumptions)

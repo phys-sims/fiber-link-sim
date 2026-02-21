@@ -16,3 +16,8 @@
 | [ADR-0012](./0012-latency-budget-model.md) | 0012-latency-budget-model.md |  |  |  |  |
 | [ADR-0013](./0013-temperature-aware-latency-and-spread.md) | 0013-temperature-aware-latency-and-spread.md |  |  |  |  |
 | [ADR-0014](./0014-phase4-pipeline-cache-scheduler.md) | 0014-phase4-pipeline-cache-scheduler.md |  |  |  |  |
+| [ADR-0015](./0015-v1-front-end-modeling-scope.md) | 0015-v1-front-end-modeling-scope.md |  |  |  |  |
+| [ADR-0016](./0016-dsp-synchronization-contract.md) | 0016-dsp-synchronization-contract.md |  |  |  |  |
+| [ADR-0017](./0017-latency-total-inclusion-switches.md) | 0017-latency-total-inclusion-switches.md |  |  |  |  |
+| [ADR-0018](./0018-environment-parameter-contract.md) | 0018-environment-parameter-contract.md |  |  |  |  |
+| [ADR-0019](./0019-artifact-selection-contract.md) | 0019-artifact-selection-contract.md |  |  |  |  |

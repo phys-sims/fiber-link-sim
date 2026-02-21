@@ -203,7 +203,19 @@ class Processing(BaseModel):
     model_config = ConfigDict(extra="forbid")
     autotune: Autotune | None = None
     dsp_chain: list[DspBlock] = Field(default_factory=list)
+    synchronization: SynchronizationConfig = Field(default_factory=lambda: SynchronizationConfig())
     fec: Fec
+
+
+TimingRecoveryMethod = Literal["gardner", "mueller_muller", "pilot"]
+
+
+class SynchronizationConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    timing_recovery: TimingRecoveryMethod = "gardner"
+    pilot_assisted: bool = False
+    pilot_update_interval_symbols: int = Field(1024, ge=1)
+    phase_search_enabled: bool = True
 
 
 PropagationModel = Literal["scalar_glnse", "manakov"]
@@ -230,7 +242,15 @@ class Propagation(BaseModel):
     model: PropagationModel
     backend: PropagationBackend = "builtin_ssfm"
     effects: Effects = Field(default_factory=Effects)
+    environment: EnvironmentModel = Field(default_factory=lambda: EnvironmentModel())
     ssfm: SSFM = Field(default_factory=SSFM)
+
+
+class EnvironmentModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    temperature_ref_c: float = 20.0
+    temperature_sigma_c: float = Field(1.0, ge=0)
+    vibration_sigma_ps: float = Field(0.0, ge=0)
 
 
 class Runtime(BaseModel):
@@ -246,6 +266,8 @@ class LatencyModel(BaseModel):
     serialization_weight: float = Field(..., ge=0)
     processing_weight: float = Field(..., ge=0)
     processing_floor_s: float = Field(..., ge=0)
+    include_queueing_in_total: bool = True
+    include_processing_in_total: bool = True
     queueing: QueueingModel = Field(default_factory=lambda: QueueingModel())
     framing: FramingOverheadModel = Field(default_factory=lambda: FramingOverheadModel())
     hardware_pipeline: HardwarePipelineModel = Field(
@@ -294,6 +316,21 @@ class Outputs(BaseModel):
     model_config = ConfigDict(extra="forbid")
     artifact_level: ArtifactLevel = "basic"
     return_waveforms: bool = False
+    artifacts: list[ArtifactKind] = Field(
+        default_factory=lambda: cast(list[ArtifactKind], ["auto"])
+    )
+
+
+ArtifactKind = Literal[
+    "auto",
+    "constellation",
+    "phase_error_trace",
+    "eye_diagram",
+    "psd",
+    "osnr_vs_span",
+    "evm_vs_distance",
+    "ber_waterfall",
+]
 
 
 class SimulationSpec(BaseModel):

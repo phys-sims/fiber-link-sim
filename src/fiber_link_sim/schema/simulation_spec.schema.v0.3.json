@@ -179,6 +179,30 @@
       "title": "Effects",
       "type": "object"
     },
+    "EnvironmentModel": {
+      "additionalProperties": false,
+      "properties": {
+        "temperature_ref_c": {
+          "default": 20.0,
+          "title": "Temperature Ref C",
+          "type": "number"
+        },
+        "temperature_sigma_c": {
+          "default": 1.0,
+          "minimum": 0,
+          "title": "Temperature Sigma C",
+          "type": "number"
+        },
+        "vibration_sigma_ps": {
+          "default": 0.0,
+          "minimum": 0,
+          "title": "Vibration Sigma Ps",
+          "type": "number"
+        }
+      },
+      "title": "EnvironmentModel",
+      "type": "object"
+    },
     "Fec": {
       "additionalProperties": false,
       "properties": {
@@ -408,6 +432,16 @@
           "title": "Processing Floor S",
           "type": "number"
         },
+        "include_queueing_in_total": {
+          "default": true,
+          "title": "Include Queueing In Total",
+          "type": "boolean"
+        },
+        "include_processing_in_total": {
+          "default": true,
+          "title": "Include Processing In Total",
+          "type": "boolean"
+        },
         "queueing": {
           "$ref": "#/$defs/QueueingModel"
         },
@@ -443,6 +477,23 @@
           "default": false,
           "title": "Return Waveforms",
           "type": "boolean"
+        },
+        "artifacts": {
+          "items": {
+            "enum": [
+              "auto",
+              "constellation",
+              "phase_error_trace",
+              "eye_diagram",
+              "psd",
+              "osnr_vs_span",
+              "evm_vs_distance",
+              "ber_waterfall"
+            ],
+            "type": "string"
+          },
+          "title": "Artifacts",
+          "type": "array"
         }
       },
       "title": "Outputs",
@@ -528,6 +579,9 @@
           "title": "Dsp Chain",
           "type": "array"
         },
+        "synchronization": {
+          "$ref": "#/$defs/SynchronizationConfig"
+        },
         "fec": {
           "$ref": "#/$defs/Fec"
         }
@@ -557,6 +611,9 @@
         },
         "effects": {
           "$ref": "#/$defs/Effects"
+        },
+        "environment": {
+          "$ref": "#/$defs/EnvironmentModel"
         },
         "ssfm": {
           "$ref": "#/$defs/SSFM"
@@ -805,6 +862,39 @@
       "title": "Spans",
       "type": "object"
     },
+    "SynchronizationConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "timing_recovery": {
+          "default": "gardner",
+          "enum": [
+            "gardner",
+            "mueller_muller",
+            "pilot"
+          ],
+          "title": "Timing Recovery",
+          "type": "string"
+        },
+        "pilot_assisted": {
+          "default": false,
+          "title": "Pilot Assisted",
+          "type": "boolean"
+        },
+        "pilot_update_interval_symbols": {
+          "default": 1024,
+          "minimum": 1,
+          "title": "Pilot Update Interval Symbols",
+          "type": "integer"
+        },
+        "phase_search_enabled": {
+          "default": true,
+          "title": "Phase Search Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "SynchronizationConfig",
+      "type": "object"
+    },
     "Transceiver": {
       "additionalProperties": false,
       "properties": {
@@ -907,5 +997,6 @@
   ],
   "title": "SimulationSpec",
   "type": "object",
-  "$id": "fiber-physics.simulation-spec.schema.v0.3"
+  "$id": "fiber-physics.simulation-spec.schema.v0.3",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
 }
